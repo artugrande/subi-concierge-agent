@@ -1,7 +1,7 @@
 {
   "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
   "name": "SUBI Concierge Agent",
-  "description": "Concise agent for Space Universal Basic Income (SUBI): explains the Space Dividend Pledge, guides Self verification, and helps users pledge/claim on Celo with MiniPay and local stables. Primary track: Judges Favorite — Celo Agents at Work Hackathon.",
+  "description": "Agent for Space Universal Basic Income (SUBI): builds unsigned transactions for pledge deposits and UBI claims on Celo. Self-verified identity via passport NFC, perpetual Alaska POMV-style distribution, MiniPay integration. Track: Judges' Favorite | Telegram: @artugrande",
   "image": "https://subi.space/favicon.ico",
   "endpoints": [
     {
@@ -23,5 +23,32 @@
       "url": "https://subi.space/"
     }
   ],
-  "supportedTrust": ["reputation"]
+  "supportedTrust": ["reputation"],
+  "capabilities": [
+    "Build unsigned pledge transactions (treasury deposits with attribution)",
+    "Build unsigned claim transactions (UBI dividend withdrawal)",
+    "Build unsigned register transactions (Self-verified identity)",
+    "Build unsigned create pledge transactions (Space Dividend Pledge)",
+    "Query claimable balance (read-only)",
+    "CIP-64 fee abstraction support (gas in stablecoins)",
+    "Multi-currency support (cUSD, USDC, wARS, Mento stables)"
+  ],
+  "contracts": {
+    "celo-mainnet": {
+      "chainId": 42220,
+      "treasury": "TBD",
+      "registry": "TBD",
+      "distributor": "TBD",
+      "pledgeRegistry": "TBD",
+      "note": "Deploy after audit - see deployment scripts"
+    },
+    "celo-sepolia": {
+      "chainId": 44787,
+      "treasury": "TBD",
+      "registry": "TBD",
+      "distributor": "TBD",
+      "pledgeRegistry": "TBD",
+      "note": "Testnet deployment ready - npm run deploy:sepolia"
+    }
+  }
 }
