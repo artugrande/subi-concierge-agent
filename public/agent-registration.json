@@ -1,0 +1,56 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "SUBI Concierge Agent",
+  "description": "Agent for Space Universal Basic Income (SUBI): builds unsigned transactions for pledge deposits and UBI claims on Celo. Self-verified identity via passport NFC, perpetual Alaska POMV-style distribution, MiniPay integration. Track: Judges' Favorite | Telegram: @artugrande",
+  "image": "https://subi.space/favicon.ico",
+  "endpoints": [
+    {
+      "type": "wallet",
+      "address": "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
+      "chainId": 42220,
+      "note": "Funded with ~1.98 USDT, 0 native CELO (relies on CIP-64)"
+    },
+    {
+      "type": "agentWallet",
+      "address": "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
+      "chainId": 42220,
+      "note": "Telegram @artugrande confirmed"
+    },
+    {
+      "type": "url",
+      "url": "https://github.com/artugrande/subi-concierge-agent"
+    },
+    {
+      "type": "url",
+      "url": "https://subi.space/"
+    }
+  ],
+  "supportedTrust": ["reputation"],
+  "capabilities": [
+    "Build unsigned pledge transactions (treasury deposits with attribution)",
+    "Build unsigned claim transactions (UBI dividend withdrawal)",
+    "Build unsigned register transactions (Self-verified identity)",
+    "Build unsigned create pledge transactions (Space Dividend Pledge)",
+    "Query claimable balance (read-only)",
+    "CIP-64 fee abstraction support (gas in stablecoins)",
+    "Multi-currency support (cUSD, USDC, wARS, Mento stables)"
+  ],
+  "contracts": {
+    "celo-mainnet": {
+      "chainId": 42220,
+      "treasury": "TBD",
+      "registry": "TBD",
+      "distributor": "TBD",
+      "pledgeRegistry": "TBD",
+      "note": "Deploy after audit - see deployment scripts"
+    },
+    "celo-sepolia": {
+      "chainId": 44787,
+      "treasury": "TBD",
+      "registry": "TBD",
+      "distributor": "TBD",
+      "pledgeRegistry": "TBD",
+      "note": "Testnet deployment ready - npm run deploy:sepolia"
+    }
+  }
+}

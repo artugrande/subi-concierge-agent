@@ -1,15 +1,46 @@
 {
   "name": "subi-concierge-agent",
-  "version": "1.0.0",
-  "description": "SUBI Concierge Agent — Space UBI claim/pledge agent on Celo",
-  "main": "index.js",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "compile": "hardhat compile",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "test": "hardhat test",
-    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
-    "deploy:alfajores": "hardhat run scripts/deploy.ts --network alfajores",
-    "deploy:celo": "hardhat run scripts/deploy.ts --network celo",
-    "agent:start": "ts-node agent/index.ts"
+    "compile": "hardhat compile",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network celo-sepolia",
+    "deploy:mainnet": "hardhat run scripts/deploy.ts --network celo-mainnet"
+  },
+  "dependencies": {
+    "next": "15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@celo/contractkit": "^8.1.0",
+    "@celo/attribution-tags": "^1.0.0",
+    "viem": "^2.21.54",
+    "wagmi": "^2.12.34",
+    "@tanstack/react-query": "^5.62.11",
+    "@rainbow-me/rainbowkit": "^2.2.3",
+    "ethers": "^6.13.4",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.2",
+    "hardhat": "^2.22.20",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
+    "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "@typechain/hardhat": "^9.1.0",
+    "tailwindcss": "^3.4.17",
+    "postcss": "^8.5.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "15.1.6",
+    "ts-node": "^10.9.2"
   },
   "keywords": [
     "celo",
@@ -18,17 +49,5 @@
     "hackathon"
   ],
   "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "@types/node": "^20.11.0",
-    "hardhat": "^2.19.4",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "@celo/attribution-tags": "^1.0.0",
-    "dotenv": "^16.4.1",
-    "ethers": "^6.10.0"
-  }
+  "license": "MIT"
 }
