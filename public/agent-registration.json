@@ -7,12 +7,14 @@
     {
       "type": "wallet",
       "address": "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
-      "chainId": 42220
+      "chainId": 42220,
+      "note": "Funded with ~1.98 USDT, 0 native CELO (relies on CIP-64)"
     },
     {
       "type": "agentWallet",
       "address": "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
-      "chainId": 42220
+      "chainId": 42220,
+      "note": "Telegram @artugrande confirmed"
     },
     {
       "type": "url",

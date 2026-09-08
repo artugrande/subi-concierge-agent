@@ -13,13 +13,17 @@ This agent builds unsigned transactions compatible with celo-mcp style transacti
 
 ## Configuration
 
-Before using, configure the agent with real values in `config.ts`:
+Agent wallet is pre-configured for Celo mainnet:
 
 ```typescript
 AGENT_ID: string              // ERC-8004 Agent ID (to be assigned)
-AGENT_WALLET: string          // Agent wallet address
-ATTRIBUTION_TAG: string       // Celo attribution tag (format: celo_<project>_<action>)
+AGENT_WALLET: string          // 0x35422f585e1f570515147E557aEF8fD6a6e1b3b3 (funded)
+ATTRIBUTION_TAG: string       // Awaiting Celo Builders registration
 ```
+
+**Wallet Status**: Funded with ~1.98 USDT on Celo mainnet. Native CELO = 0 (relies on CIP-64 fee abstraction).
+
+**Important**: First registry mint may require tiny CELO top-up (~0.001 CELO) if fee abstraction is not yet active for that contract. Subsequent claims use CIP-64.
 
 After deployment, update contract addresses:
 

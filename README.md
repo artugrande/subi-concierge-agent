@@ -477,6 +477,10 @@ Celo's fee abstraction lets users pay gas in the token they're transacting:
 
 No need to acquire CELO token. Critical for UBI where recipients may have no capital to buy gas tokens.
 
+**Note**: First-time Self registration may require tiny CELO top-up (~0.001 CELO ≈ $0.0005) if fee abstraction is not yet active for the registry contract. After first mint, all operations use CIP-64. See [`docs/FEE_ABSTRACTION.md`](docs/FEE_ABSTRACTION.md) for details.
+
+**Agent Wallet**: `0x35422f585e1f570515147E557aEF8fD6a6e1b3b3` (funded with ~1.98 USDT, 0 native CELO - demonstrates fee abstraction works)
+
 ### Value Moved Tracking
 
 All agent transactions include `attribution` field with format `celo_<project>_<action>`:

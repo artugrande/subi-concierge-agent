@@ -10,12 +10,14 @@ export const AGENT_CONFIG = {
   // See: https://eips.ethereum.org/EIPS/eip-8004
   AGENT_ID: "PLACEHOLDER_AGENT_ID",
   
-  // Agent wallet address - TO BE CONFIGURED
-  AGENT_WALLET: "PLACEHOLDER_AGENT_WALLET_ADDRESS",
+  // Agent wallet address (funded on Celo mainnet)
+  // Balance: ~1.98 USDT, 0 native CELO (relies on fee abstraction)
+  AGENT_WALLET: "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
   
   // Celo attribution tag for value moved tracking
   // Format: celo_<project>_<action>
-  ATTRIBUTION_TAG: "PLACEHOLDER_CELO_ATTRIBUTION_TAG",
+  // Awaiting Celo Builders registration for official tag
+  ATTRIBUTION_TAG: "PLACEHOLDER_celo_subi_action",
   
   // Contract addresses (populated after deployment)
   CONTRACTS: {
@@ -24,7 +26,9 @@ export const AGENT_CONFIG = {
       registry: "",
       distributor: "",
       pledgeRegistry: "",
-      asset: "0x765DE816845861e75A25fCA122bb6898B8B1282a", // cUSD
+      asset: "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e", // USDT (agent wallet funded with this)
+      // Alternative: cUSD 0x765DE816845861e75A25fCA122bb6898B8B1282a
+      // Alternative: USDC 0xcebA9300f2b948710d2653dD7B07f33A8B32118C
     },
     CELO_SEPOLIA: {
       treasury: "",
