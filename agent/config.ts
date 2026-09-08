@@ -6,12 +6,12 @@
  */
 
 export const AGENT_CONFIG = {
-  // ERC-8004 Agent ID - TO BE ASSIGNED
+  // ERC-8004 Agent ID (Celo mainnet Identity Registry)
   // See: https://eips.ethereum.org/EIPS/eip-8004
-  AGENT_ID: "PLACEHOLDER_AGENT_ID",
+  AGENT_ID: "9822",
   
   // Agent wallet address (funded on Celo mainnet)
-  // Balance: ~1.98 USDT, 0 native CELO (relies on fee abstraction)
+  // Balance: ~1.98 USDT + ~50 CELO (fee abstraction still demoed for MiniPay UX)
   AGENT_WALLET: "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
   
   // Celo attribution tag for value moved tracking
