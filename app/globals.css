@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --celo-green: #35D07F;
+  --celo-gold: #FBCC5C;
+  --celo-dark: #2E3338;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.btn-primary {
+  @apply bg-[var(--celo-green)] hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+}
+
+.btn-secondary {
+  @apply bg-white hover:bg-gray-50 text-[var(--celo-dark)] font-semibold py-3 px-6 rounded-lg border-2 border-gray-200 transition-colors duration-200;
+}
+
+.card {
+  @apply bg-white rounded-xl shadow-lg p-6;
+}
