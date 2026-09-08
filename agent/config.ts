@@ -16,8 +16,8 @@ export const AGENT_CONFIG = {
   
   // Celo attribution tag for value moved tracking
   // Format: celo_<project>_<action>
-  // Awaiting Celo Builders registration for official tag
-  ATTRIBUTION_TAG: "PLACEHOLDER_celo_subi_action",
+  // Celo Builders Agents at Work attribution tag (locked to github artugrande/subi-concierge-agent)
+  ATTRIBUTION_TAG: "celo_ac17e664a585",
   
   // Contract addresses (populated after deployment)
   CONTRACTS: {
