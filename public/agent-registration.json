@@ -1,0 +1,27 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "SUBI Concierge Agent",
+  "description": "Concise agent for Space Universal Basic Income (SUBI): explains the Space Dividend Pledge, guides Self verification, and helps users pledge/claim on Celo with MiniPay and local stables. Primary track: Judges Favorite — Celo Agents at Work Hackathon.",
+  "image": "https://subi.space/favicon.ico",
+  "endpoints": [
+    {
+      "type": "wallet",
+      "address": "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
+      "chainId": 42220
+    },
+    {
+      "type": "agentWallet",
+      "address": "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
+      "chainId": 42220
+    },
+    {
+      "type": "url",
+      "url": "https://github.com/artugrande/subi-concierge-agent"
+    },
+    {
+      "type": "url",
+      "url": "https://subi.space/"
+    }
+  ],
+  "supportedTrust": ["reputation"]
+}
