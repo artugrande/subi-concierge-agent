@@ -1,280 +1,141 @@
-# Celo Agents at Work Hackathon Submission
+# SUBI Concierge Agent - Celo Agents at Work Hackathon
 
-## Project: SUBI Concierge Agent
+## Hackathon Entry Information
 
-### Submission Details
+- **Hackathon**: Celo Agents at Work (Judges Favorite Category)
+- **Project**: SUBI Concierge Agent
+- **Description**: Space UBI claim/pledge agent on Celo + Self + MiniPay
+- **Attribution Tag**: `celo_ac17e664a585` (from Celo Builders registration)
+- **ERC-8004 Agent ID**: `9822`
+- **Agent Wallet**: `0x35422f585e1f570515147E557aEF8fD6a6e1b3b3`
 
-- **Track**: Judges' Favorite
-- **Author**: Arturo Grande
-- **Telegram**: @artugrande
-- **Repository**: https://github.com/artugrande/subi-concierge-agent (PUBLIC)
-- **Reference Site**: https://subi.space
+## Critical: Celo Attribution Tags
 
----
+**Every transaction on Celo mainnet MUST include the attribution tag to receive hackathon credit.**
 
-## Elevator Pitch (30 seconds)
+Missing the attribution tag on a transaction means that transaction will **permanently lose credit**. There is no backfill mechanism.
 
-Article I of the Outer Space Treaty says space exploration is "for the benefit of all countries" — but there's no infrastructure to deliver that benefit to actual humans.
+### How It Works
 
-SUBI is that infrastructure: Self-verified identity (passport NFC, no biometrics), stablecoin distribution (no farming token), Celo fee abstraction (gas paid in the currency you receive), MiniPay reach (11M wallets, no app install).
+This project uses `@celo/attribution-tags` to append the attribution tag to all outbound transactions:
 
-The pitch to space companies isn't "do good" — it's "here's transparent compliance with the treaty your country ratified."
+1. **Configuration** (`config.ts`): Attribution tag and agent ID are stored
+2. **Utility** (`utils/attribution.ts`): Helper functions to append tags to transaction data
+3. **Deploy Scripts** (`scripts/deploy.ts`): All deployments include attribution
+4. **Agent Transactions** (`agent/transactions.ts`): All transaction builders include attribution
 
----
+### Verification
 
-## What Makes This "Judges' Favorite"?
+After deploying or sending your first transaction with the attribution tag, verify it:
 
-### 1. Real Institutional Problem
-- 140+ countries ratified Outer Space Treaty with benefit-sharing obligation
-- $1.8 trillion space economy projected by 2035 (WEF/McKinsey)
-- Zero operational mechanism to comply with Article I
-- UNCOPUOS (UN space committee) needs a working example by 2027
-
-### 2. Celo Primitives Working Together
-- **Self**: ZK proof from passport NFC (unique humans, no PII)
-- **Fee Abstraction (CIP-64)**: Gas paid in cUSD/wARS/USDC — no CELO token friction
-- **MiniPay**: 11M wallets deployed, instant distribution channel
-- **Mento Stables**: 21 currencies for local purchasing power
-
-### 3. Anti-Farming by Design
-- One human, one slot (Self nullifiers)
-- No token to speculate on (distributes stablecoins)
-- Proof-of-life renewal (12 months)
-- Conservative accounting (overpays never, underpays when stale)
-
-### 4. State-Adoptable
-Unlike Worldcoin (biometric privacy concerns) or token-based UBI (regulatory red flags), governments can back SUBI:
-- Uses government-issued documents (passports)
-- No project token
-- Voluntary pledges (not coercive)
-- Open-source reference implementation
-
----
-
-## Technical Achievements
-
-### Smart Contracts (Celo-Optimized)
-
-1. **SubiDistributor.sol** — O(1) claim cost
-   - Accumulated index pattern: constant gas regardless of time elapsed
-   - Perpetual solvency: distributes % of fund, never fixed amount
-   - Alaska Permanent Fund draw model (4% annual)
-
-2. **SubiRegistry.sol** — Self integration hooks
-   - Nullifier-based uniqueness
-   - 12-month proof-of-life
-   - Rebinding with cooldown (lost device recovery)
-
-3. **SubiTreasury.sol** — Permissionless deposits
-   - Anyone can pledge with attribution
-   - Transparent ledger of contributions
-   - Only distributor can withdraw
-
-4. **PledgeRegistry.sol** — Voluntary commitment ledger
-   - Space companies publish pledges on-chain
-   - Quarterly report hashes (auditable)
-   - No legal force — transparency is the mechanism
-
-### Agent API (celo-mcp style)
-
-- Unsigned transaction builders for pledge/claim/register
-- Attribution tags for value-moved tracking
-- Configuration placeholders for ERC-8004 Agent ID
-- Read-only queries (claimable balance)
-
-### Web App (MiniPay-Ready)
-
-- Next.js 15 App Router
-- Mobile-first UI optimized for MiniPay browser
-- Claim and Pledge flows
-- Educational content (treaty background, anti-farming design)
-
-### Tests (Comprehensive)
-
-- Distribution math verification
-- Perpetual solvency checks
-- O(1) gas cost validation
-- Registry integration
-- Treasury attribution tracking
-
----
-
-## Agent Integration
-
-### Current State (Hackathon MVP)
-
-```typescript
-// agent/config.ts
-AGENT_ID: "PLACEHOLDER_AGENT_ID"           // ERC-8004 to be assigned
-AGENT_WALLET: "PLACEHOLDER_AGENT_WALLET"   // Agent address
-ATTRIBUTION_TAG: "PLACEHOLDER_CELO_TAG"    // Value-moved tracking
-```
-
-### Usage
-
-```typescript
-import { buildPledgeTransaction, buildClaimTransaction } from "./agent/transactions";
-
-// Build pledge (space company)
-const txs = buildPledgeTransaction("CELO_MAINNET", amount, "SpaceX - Starlink");
-
-// Build claim (verified human)
-const tx = buildClaimTransaction("CELO_MAINNET", humanAddress);
-```
-
-### AskBots Ready
-
-- Clear API documentation in `agent/README.md`
-- Unsigned transaction format compatible with celo-mcp
-- Placeholder fields for bot configuration
-- Attribution tags for tracking
-
----
-
-## Deployment Plan
-
-### Testnet (Celo Sepolia)
 ```bash
-npm run deploy:sepolia
+npx @celo/attribution-tags verifyTx <TRANSACTION_HASH> --network celo
 ```
 
-### Mainnet (Post-Hackathon)
-1. Audit contracts (especially distributor math)
-2. Set up multisig + timelock for governance
-3. Integrate real Self protocol
-4. Deploy with cUSD treasury
-5. Announce at Argentina Space conference (Nov 2026)
+This will confirm that the attribution tag was correctly included in the transaction.
 
----
+### Implementation Details
 
-## Judging Criteria Alignment
+The `toDataSuffix` function from `@celo/attribution-tags` appends the tag to the transaction's `data` field:
 
-### Innovation
-- First UBI system with legal foundation (treaty compliance)
-- O(1) claim cost via accumulated index pattern
-- Conservative accounting (impossible to overpay)
+```typescript
+import { toDataSuffix } from "@celo/attribution-tags";
 
-### Technical Execution
-- Comprehensive test coverage
-- Clean contract architecture
-- Agent API ready for integration
-- MiniPay-optimized frontend
+// For any transaction data (contract call, deployment, or simple transfer)
+const suffix = toDataSuffix("celo_ac17e664a585");
+const dataWithAttribution = originalData + suffix;
+```
 
-### Celo Ecosystem Fit
-- Uses Self (Celo-native identity)
-- Leverages fee abstraction (critical for UBI)
-- MiniPay distribution (11M wallets)
-- Mento stablecoins (21 currencies)
+**Key points:**
+- Works for contract deployments (creation transactions)
+- Works for contract calls (function calls)
+- Works for simple transfers (empty data becomes `0x` + suffix)
+- The tag must be appended to EVERY transaction
 
-### Real-World Impact
-- Solves institutional problem (treaty compliance)
-- Path to state adoption (no biometrics, no token)
-- Evidence-backed (Alaska 44 years, GiveDirectly 9 years)
-- Presentation target: UNCOPUOS 2027
+## Deployment Instructions
 
-### Agent-First Design
-- Unsigned transaction builders
-- Attribution tags
-- Clear documentation
-- Configuration placeholders
+### Prerequisites
 
----
+1. Install dependencies:
+```bash
+npm install
+```
 
-## What's NOT Done (Intentional Scope)
+2. Set up your `.env` file (copy from `.env.example`):
+```bash
+cp .env.example .env
+```
 
-### Self Integration
-- **Current**: Stub accepts nullifiers directly
-- **Production**: Integrate `SelfVerificationRoot`, verify ZK proofs on-chain
-- **Reason**: Self protocol integration requires production keys and audited proof verification
+3. Add your deployer private key to `.env`:
+```
+DEPLOYER_PRIVATE_KEY=your_private_key_here
+```
 
-### Frontend Wallet Connection
-- **Current**: UI mockups with placeholder state
-- **Production**: wagmi/viem integration, real wallet signing
-- **Reason**: Focus on contracts and agent API for hackathon
+⚠️ **NEVER commit your `.env` file or private keys to the repository!**
 
-### Mainnet Deployment
-- **Current**: Deployment scripts ready, not executed
-- **Production**: After audit and multisig setup
-- **Reason**: Not deploying unaudited contracts to mainnet with real funds
+### Deploy to Alfajores Testnet
 
-### UNCOPUOS Politics
-- **Out of Scope**: UN negotiation, legal ratification
-- **In Scope**: Operational precedent (show it works)
+```bash
+npm run deploy:alfajores
+```
 
----
+### Deploy to Celo Mainnet
 
-## Repository Structure
+```bash
+npm run deploy:celo
+```
+
+### Verify First Transaction
+
+After your first mainnet deployment, verify the attribution tag was included:
+
+```bash
+npx @celo/attribution-tags verifyTx <TX_HASH> --network celo
+```
+
+## Agent Usage
+
+Run the agent (currently in example mode):
+
+```bash
+npm run agent:start
+```
+
+The agent demonstrates building various transaction types:
+- UBI claims
+- UBI pledges
+- Simple transfers
+
+All transactions are built with the attribution tag pre-included.
+
+## Project Structure
 
 ```
 subi-concierge-agent/
-├── contracts/              # Solidity contracts
-│   ├── SubiRegistry.sol
-│   ├── SubiTreasury.sol
-│   ├── SubiDistributor.sol
-│   └── PledgeRegistry.sol
-├── test/                   # Comprehensive tests
-│   ├── SubiDistributor.test.ts
-│   └── SubiTreasury.test.ts
-├── agent/                  # Agent API
-│   ├── config.ts
-│   ├── transactions.ts
-│   └── README.md
-├── app/                    # Next.js frontend
-│   ├── page.tsx
-│   ├── layout.tsx
-│   └── globals.css
+├── agent/
+│   ├── index.ts           # Main agent logic
+│   └── transactions.ts    # Transaction builders (all with attribution)
+├── contracts/
+│   └── SUBIConcierge.sol  # Smart contract
 ├── scripts/
-│   └── deploy.ts
-├── hardhat.config.ts
-├── package.json
-└── README.md               # Full documentation
+│   └── deploy.ts          # Deployment script (with attribution)
+├── utils/
+│   └── attribution.ts     # Attribution tag helpers
+├── config.ts              # Agent configuration (tag, ID, wallet)
+├── hardhat.config.ts      # Hardhat configuration
+└── package.json           # Dependencies including @celo/attribution-tags
 ```
 
----
+## Important Notes
 
-## Next Steps (Post-Hackathon)
+1. **Attribution is mandatory**: Every transaction must include the tag
+2. **No backfill**: Missing tags cannot be retroactively added
+3. **Verify early**: Use `verifyTx` on your first mainnet transaction
+4. **Keep keys secure**: Never commit private keys or seed phrases
+5. **Test on Alfajores**: Test your deployment on testnet first
 
-### Technical
-1. Smart contract audit (focus on distributor arithmetic)
-2. Self protocol integration (real ZK proof verification)
-3. Frontend wallet connection (wagmi)
-4. Mainnet deployment (after audit)
+## Resources
 
-### Institutional
-1. Present at Argentina Space conference (Salta, Nov 11-13 2026)
-2. Get first Space Dividend Pledge signature
-3. Pilot with 1,000 verified humans in Argentina
-4. Present to UNCOPUOS (Q3 2027)
-
-### Growth
-1. MiniPay Mini App submission
-2. Expand stablecoin support (all Mento currencies)
-3. Document attestation for populations without passports
-4. Regional scale (Latin America via wFIAT)
-
----
-
-## Why This Wins
-
-Most hackathon projects are demos. SUBI is a deployment plan.
-
-The space industry needs treaty compliance infrastructure — not in theory, now. UNCOPUOS Working Group on Space Resources concludes in 2027. There's a 9-month window to show a working alternative to the failed "technology transfer between states" model.
-
-Celo is the only chain where this works:
-- Self identity (no other chain has passport-based ZK proofs)
-- Fee abstraction (UBI recipients can't afford gas tokens)
-- MiniPay (distribution channel already deployed)
-- Stablecoin diversity (local currencies matter for purchasing power)
-
-If a space company signs the first pledge on-chain at Argentina Space in November, and Argentina presents this to the UN in 2027, that's not a hackathon project — that's infrastructure.
-
----
-
-## Contact
-
-- **Author**: Arturo Grande
-- **Telegram**: [@artugrande](https://t.me/artugrande)
-- **Website**: [subi.space](https://subi.space)
-- **Repository**: [github.com/artugrande/subi-concierge-agent](https://github.com/artugrande/subi-concierge-agent)
-
-Thank you for considering SUBI for Judges' Favorite. 🚀
+- [Celo Attribution Tags Documentation](https://github.com/celo-org/attribution-tags)
+- [Celo Agents at Work Hackathon](https://celo.org/hackathons)
+- [Celo Documentation](https://docs.celo.org)

@@ -1,10 +1,10 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-import "@nomicfoundation/hardhat-ethers";
+import { AGENT_CONFIG } from "./config";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.24",
+    version: "0.8.20",
     settings: {
       optimizer: {
         enabled: true,
@@ -13,15 +13,22 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    "celo-sepolia": {
-      url: process.env.CELO_SEPOLIA_RPC || "https://alfajores-forno.celo-testnet.org",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 44787,
+    hardhat: {
+      chainId: 1337,
     },
-    "celo-mainnet": {
-      url: process.env.CELO_MAINNET_RPC || "https://forno.celo.org",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    celo: {
+      url: AGENT_CONFIG.CELO_RPC_URL,
       chainId: 42220,
+      accounts: AGENT_CONFIG.DEPLOYER_PRIVATE_KEY 
+        ? [AGENT_CONFIG.DEPLOYER_PRIVATE_KEY]
+        : [],
+    },
+    alfajores: {
+      url: AGENT_CONFIG.ALFAJORES_RPC_URL,
+      chainId: 44787,
+      accounts: AGENT_CONFIG.DEPLOYER_PRIVATE_KEY
+        ? [AGENT_CONFIG.DEPLOYER_PRIVATE_KEY]
+        : [],
     },
   },
   paths: {
