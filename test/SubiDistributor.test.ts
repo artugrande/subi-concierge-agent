@@ -25,32 +25,31 @@ describe("SubiDistributor", function () {
     const MockERC20Factory = await ethers.getContractFactory("MockERC20");
     asset = await MockERC20Factory.deploy("USD Coin", "USDC", 6);
 
-    // Deploy registry (needs distributor address, will set after)
-    const SubiRegistryFactory = await ethers.getContractFactory("SubiRegistry");
-    
-    // Deploy with placeholder, then deploy distributor, then link
-    const placeholderAddr = "0x0000000000000000000000000000000000000001";
-    registry = await SubiRegistryFactory.deploy(placeholderAddr);
-
-    // Deploy distributor
+    // Orden correcto: distributor -> registry -> treasury -> cableado.
+    // El setup anterior desplegaba el registry con el placeholder 0x…01 y luego
+    // redesplegaba ambos, dejando al registry apuntando a un distributor
+    // descartado. Con eso el hook onRegister nunca se ejecutaba y los bugs de
+    // orden y de contabilidad quedaban invisibles.
     const SubiDistributorFactory = await ethers.getContractFactory("SubiDistributor");
     distributor = await SubiDistributorFactory.deploy(
       await asset.getAddress(),
-      await registry.getAddress(),
       DRAW_RATE_BPS
     );
 
-    // Update registry to point to real distributor
-    // For simplicity in tests, we'll just redeploy registry with correct address
-    const SubiRegistryFactory2 = await ethers.getContractFactory("SubiRegistry");
-    registry = await SubiRegistryFactory2.deploy(await distributor.getAddress());
-    
-    // Redeploy distributor with correct registry
-    const SubiDistributorFactory2 = await ethers.getContractFactory("SubiDistributor");
-    distributor = await SubiDistributorFactory2.deploy(
+    const SubiRegistryFactory = await ethers.getContractFactory("SubiRegistry");
+    registry = await SubiRegistryFactory.deploy();
+
+    const SubiTreasuryFactory = await ethers.getContractFactory("SubiTreasury");
+    const treasury = await SubiTreasuryFactory.deploy(
       await asset.getAddress(),
+      owner.address
+    );
+
+    await registry.setDistributor(await distributor.getAddress());
+    await treasury.setDistributor(await distributor.getAddress());
+    await distributor.wire(
       await registry.getAddress(),
-      DRAW_RATE_BPS
+      await treasury.getAddress()
     );
   });
 
@@ -66,7 +65,6 @@ describe("SubiDistributor", function () {
       await expect(
         SubiDistributorFactory.deploy(
           await asset.getAddress(),
-          await registry.getAddress(),
           1001 // 10.01% > 10% max
         )
       ).to.be.revertedWithCustomError(distributor, "DrawRateTooHigh");
@@ -237,10 +235,11 @@ describe("SubiDistributor", function () {
     });
 
     it("Should prevent claiming when nothing is owed", async function () {
-      await asset.mint(await distributor.getAddress(), ethers.parseUnits("100000", 6));
+      // Sin fondo no hay devengo, y ahí sí no hay nada que cobrar.
+      // (Con fondo, el segundo que separa dos bloques ya devenga algo:
+      // el reparto es continuo, así que "reclamar en el acto" no existe.)
       await registry.connect(alice).register(ethers.id("alice-nullifier"));
 
-      // Try to claim immediately (no time passed)
       await expect(
         distributor.connect(alice).claim()
       ).to.be.revertedWithCustomError(distributor, "NothingToClaim");
@@ -264,7 +263,9 @@ describe("SubiDistributor", function () {
 
       await distributor.connect(alice).claim();
       const balance = await asset.balanceOf(alice.address);
-      expect(balance).to.equal(claimable);
+      // claimable se leyó un bloque antes del claim: el tiempo solo avanza,
+      // así que lo cobrado es igual o un poco mayor, nunca menor.
+      expect(balance).to.be.gte(claimable);
     });
   });
 
