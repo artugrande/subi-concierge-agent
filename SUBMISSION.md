@@ -137,7 +137,7 @@ so contributions never have to be pre-moved.
 
 ### Conversational agent
 Guides a user through verify → contribute → claim, in the currency they live in.
-Payouts can settle in any of 21 local stablecoins on Celo, including wARS with a
+Payouts can settle in any of 13 currencies reachable from USDT in a single swap, including wARS with a
 zero-cost off-ramp for Argentina.
 
 ### MCP server — `/api/mcp`
