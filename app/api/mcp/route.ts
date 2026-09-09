@@ -209,6 +209,7 @@ async function run(name: string, args: Record<string, any>) {
             to: ASSET,
             data: erc20.encodeFunctionData("approve", [C.treasury, monto]),
             value: "0x0",
+            feeCurrency: ASSET,
           },
           {
             paso: 2,
@@ -216,9 +217,13 @@ async function run(name: string, args: Record<string, any>) {
             to: C.treasury,
             data: treasury.encodeFunctionData("deposit", [monto, atribucion]),
             value: "0x0",
+            feeCurrency: ASSET,
           },
         ],
-        nota: "En Celo el gas se puede pagar en la misma stablecoin usando feeCurrency (CIP-64).",
+        nota:
+          "Las dos transacciones llevan feeCurrency (CIP-64), así que el gas se paga en el " +
+          "mismo USDT que se aporta y no hace falta tener CELO. Una billetera que no soporte " +
+          "CIP-64 puede ignorar el campo y pagar en CELO.",
       };
     }
 
@@ -243,6 +248,12 @@ async function run(name: string, args: Record<string, any>) {
         to: C.distributor,
         data: new ethers.Interface(ABI.distributor).encodeFunctionData("claim", []),
         value: "0x0",
+        // CIP-64: el gas sale del mismo USDT que se cobra, así que quien cobra
+        // nunca necesita tener CELO. Es el punto entero del diseño.
+        feeCurrency: ASSET,
+        nota:
+          "Lleva feeCurrency (CIP-64): el gas se paga en el mismo USDT que se cobra. " +
+          "Una billetera sin soporte CIP-64 puede ignorar el campo y pagar en CELO.",
       };
     }
 
