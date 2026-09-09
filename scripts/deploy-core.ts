@@ -20,11 +20,23 @@ const DRAW_RATE_BPS = Number(process.env.SUBI_DRAW_RATE_BPS ?? 400); // 4% anual
 
 async function main() {
   const [deployer] = await ethers.getSigners();
+  if (!deployer) {
+    throw new Error(
+      "No hay firmante. Falta DEPLOYER_PRIVATE_KEY en el .env.\n" +
+      "  cp .env.example .env   y completar DEPLOYER_PRIVATE_KEY=0x…"
+    );
+  }
+
   const net = await ethers.provider.getNetwork();
+  const saldo = await ethers.provider.getBalance(deployer.address);
+  if (saldo === 0n) {
+    throw new Error(`La wallet ${deployer.address} no tiene CELO para el gas.`);
+  }
 
   console.log(`red        ${net.name} (${net.chainId})`);
   console.log(`deployer   ${deployer.address}`);
   console.log(`asset      ${ASSET}`);
+  console.log(`gas        ${ethers.formatEther(saldo)} CELO`);
   console.log(`drawRate   ${DRAW_RATE_BPS} bps\n`);
 
   // 1. distributor (no necesita conocer a nadie todavía)
