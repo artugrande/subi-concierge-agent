@@ -9,8 +9,9 @@
     "lint": "next lint",
     "test": "hardhat test",
     "compile": "hardhat compile",
-    "deploy:sepolia": "hardhat run scripts/deploy.ts --network celo-sepolia",
-    "deploy:mainnet": "hardhat run scripts/deploy.ts --network celo-mainnet"
+    "deploy:mainnet": "hardhat run scripts/deploy-core.ts --network celo",
+    "deploy:alfajores": "hardhat run scripts/deploy-core.ts --network alfajores",
+    "rescue": "hardhat run scripts/rescue-treasury.ts --network celo"
   },
   "dependencies": {
     "@celo/attribution-tags": "^0.3.0",
