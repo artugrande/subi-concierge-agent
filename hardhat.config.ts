@@ -23,9 +23,10 @@ const config: HardhatUserConfig = {
         ? [AGENT_CONFIG.DEPLOYER_PRIVATE_KEY]
         : [],
     },
-    alfajores: {
-      url: AGENT_CONFIG.ALFAJORES_RPC_URL,
-      chainId: 44787,
+    // Alfajores fue dado de baja: el testnet de Celo es Celo Sepolia.
+    "celo-sepolia": {
+      url: AGENT_CONFIG.CELO_SEPOLIA_RPC_URL,
+      chainId: 11142220,
       accounts: AGENT_CONFIG.DEPLOYER_PRIVATE_KEY
         ? [AGENT_CONFIG.DEPLOYER_PRIVATE_KEY]
         : [],
