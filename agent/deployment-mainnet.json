@@ -8,33 +8,48 @@
   "assetSymbol": "USDT",
   "assetDecimals": 6,
   "contracts": {
-    "distributor": "0x82c3273381F96027f78CcB3595b3606203e453CC",
-    "registry": "0x7eb6a75AeCcD8D90F5f9c2D46eb92ab5535e439A",
-    "treasury": "0xf9b22b915C881F0565CCC7B0874f7F7032eDeb76",
-    "pledgeRegistry": "0xaa572f7F6b141B99768a5eE542967A263d2a8071"
+    "distributor": "0x1f945618F4bFa0e131E07FfA0335e7Ada6556279",
+    "registry": "0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232",
+    "treasury": "0x093D55468acee5a9b11644d1E55097C4E99C2739",
+    "pledgeRegistry": "0x642b4F2737E85f42bae5Fc4830544EBCf48F1F13"
   },
   "wiring": {
-    "registry.distributor": "0x82c3273381F96027f78CcB3595b3606203e453CC",
-    "treasury.distributor": "0x82c3273381F96027f78CcB3595b3606203e453CC",
-    "distributor.registry": "0x7eb6a75AeCcD8D90F5f9c2D46eb92ab5535e439A",
-    "distributor.treasury": "0xf9b22b915C881F0565CCC7B0874f7F7032eDeb76",
+    "registry.distributor": "0x1f945618F4bFa0e131E07FfA0335e7Ada6556279",
+    "treasury.distributor": "0x1f945618F4bFa0e131E07FfA0335e7Ada6556279",
+    "distributor.registry": "0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232",
+    "distributor.treasury": "0x093D55468acee5a9b11644d1E55097C4E99C2739",
     "verifiedOnChain": true
   },
   "config": {
     "drawRateBps": 400,
-    "seedAttribution": "subi-redeploy-seed",
+    "seedAttribution": "subi-pr3-redeploy-seed",
     "seedAmount": "500000",
     "seedAmountFormatted": "0.5"
   },
-  "deployedAt": "2026-09-09T00:41:59Z",
+  "deployedAt": "2026-09-09T01:13:20.696Z",
   "supersedes": {
-    "note": "Despliegue anterior retirado. El registry apuntaba a 0x…01, un placeholder que nunca se reemplazó porque el campo era immutable, así que nunca notificó al distributor. Además no existía camino de fondos entre treasury y distributor y claim() revertía siempre.",
-    "distributor": "0xB3d836811DC211378285a39B8b0ba2ccCD086D81",
-    "registry": "0xA6e481f0D115aAd4193f5f8EC135939CF99D6C50",
-    "treasury": "0xaE18D9E48367Fc3d9D6977C221B1377Ce6B7c1A2",
-    "pledgeRegistry": "0x89C15969Fd91271b62BD39a6200B46Abe1534F5d"
+    "note": "Segundo set retirado: era anterior a la verificacion real de Self (el padron aceptaba un nullifier arbitrario). El primero, ademas, tenia el registry apuntando a 0x...01 y no habia camino de fondos entre treasury y distributor.",
+    "previous": {
+      "distributor": "0x82c3273381F96027f78CcB3595b3606203e453CC",
+      "registry": "0x7eb6a75AeCcD8D90F5f9c2D46eb92ab5535e439A",
+      "treasury": "0xf9b22b915C881F0565CCC7B0874f7F7032eDeb76",
+      "pledgeRegistry": "0xaa572f7F6b141B99768a5eE542967A263d2a8071"
+    },
+    "first": {
+      "distributor": "0xB3d836811DC211378285a39B8b0ba2ccCD086D81",
+      "registry": "0xA6e481f0D115aAd4193f5f8EC135939CF99D6C50",
+      "treasury": "0xaE18D9E48367Fc3d9D6977C221B1377Ce6B7c1A2",
+      "pledgeRegistry": "0x89C15969Fd91271b62BD39a6200B46Abe1534F5d"
+    }
   },
   "selfHub": "0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF",
   "scopeSeed": "subi-space",
-  "minAge": 18
+  "minAge": 18,
+  "identityVerification": {
+    "provider": "Self",
+    "hub": "0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF",
+    "registryScope": "1791990282645894430767631087883723948916118618645082015976770485675938863393",
+    "verificationConfigId": "0xc52f992ebee4435b00b65d2c74b12435e96359d1ccf408041528414e6ea687bc",
+    "note": "scope y configId leidos on-chain: el constructor registro la config contra el hub real. register(bytes32) no existe en el bytecode desplegado."
+  }
 }

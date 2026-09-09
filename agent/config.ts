@@ -22,10 +22,10 @@ export const AGENT_CONFIG = {
   // Contract addresses (populated after deployment)
   CONTRACTS: {
     CELO_MAINNET: {
-      treasury: "0xf9b22b915C881F0565CCC7B0874f7F7032eDeb76",
-      registry: "0x7eb6a75AeCcD8D90F5f9c2D46eb92ab5535e439A",
-      distributor: "0x82c3273381F96027f78CcB3595b3606203e453CC",
-      pledgeRegistry: "0xaa572f7F6b141B99768a5eE542967A263d2a8071",
+      treasury: "0x093D55468acee5a9b11644d1E55097C4E99C2739",
+      registry: "0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232",
+      distributor: "0x1f945618F4bFa0e131E07FfA0335e7Ada6556279",
+      pledgeRegistry: "0x642b4F2737E85f42bae5Fc4830544EBCf48F1F13",
       asset: "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e", // USDT (agent wallet funded with this)
       // Alternative: cUSD 0x765DE816845861e75A25fCA122bb6898B8B1282a
       // Alternative: USDC 0xcebA9300f2b948710d2653dD7B07f33A8B32118C
