@@ -18,6 +18,32 @@ import { ethers } from "hardhat";
 const ASSET = process.env.SUBI_ASSET ?? "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e";
 const DRAW_RATE_BPS = Number(process.env.SUBI_DRAW_RATE_BPS ?? 400); // 4% anual
 
+/**
+ * Relee un valor hasta que coincida con lo esperado.
+ *
+ * `tx.wait()` garantiza que la transacción entró en un bloque, pero no que el
+ * nodo RPC que te toca en la próxima lectura ya tenga ese estado: forno está
+ * detrás de un balanceador y podés pegarle a una réplica atrasada. Sin esto,
+ * la verificación fallaba de forma intermitente sobre un cableado correcto.
+ */
+async function esperarValor(
+  nombre: string,
+  leer: () => Promise<string>,
+  esperado: string,
+  intentos = 12,
+  esperaMs = 2500
+): Promise<boolean> {
+  for (let i = 0; i < intentos; i++) {
+    try {
+      const real = await leer();
+      if (real.toLowerCase() === esperado.toLowerCase()) return true;
+      if (i === 0) console.log(`    · ${nombre} todavía no refleja el cambio, reintentando…`);
+    } catch { /* réplica atrasada: reintentar */ }
+    await new Promise((r) => setTimeout(r, esperaMs));
+  }
+  return false;
+}
+
 async function main() {
   const [deployer] = await ethers.getSigners();
   if (!deployer) {
@@ -71,19 +97,23 @@ async function main() {
   )).wait();
 
   // --- verificación: si algo quedó suelto, no sigue ---
-  const checks: [string, string, string][] = [
-    ["registry.distributor", await registry.distributor(), await distributor.getAddress()],
-    ["treasury.distributor", await treasury.distributor(), await distributor.getAddress()],
-    ["distributor.registry", await distributor.registry(), await registry.getAddress()],
-    ["distributor.treasury", await distributor.treasury(), await treasury.getAddress()],
+  const dAddr = await distributor.getAddress();
+  const gAddr = await registry.getAddress();
+  const tAddr = await treasury.getAddress();
+
+  const checks: [string, () => Promise<string>, string][] = [
+    ["registry.distributor", () => registry.distributor(), dAddr],
+    ["treasury.distributor", () => treasury.distributor(), dAddr],
+    ["distributor.registry", () => distributor.registry(), gAddr],
+    ["distributor.treasury", () => distributor.treasury(), tAddr],
   ];
 
   let ok = true;
   console.log("");
-  for (const [nombre, real, esperado] of checks) {
-    const bien = real.toLowerCase() === esperado.toLowerCase();
+  for (const [nombre, leer, esperado] of checks) {
+    const bien = await esperarValor(nombre, leer, esperado);
     if (!bien) ok = false;
-    console.log(`  ${bien ? "✓" : "✗"} ${nombre.padEnd(22)} ${real}`);
+    console.log(`  ${bien ? "✓" : "✗"} ${nombre.padEnd(22)} ${esperado}`);
   }
 
   if (!ok) throw new Error("el cableado quedó incompleto: no usar este despliegue");

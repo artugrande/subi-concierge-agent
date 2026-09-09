@@ -10,7 +10,6 @@
     "test": "hardhat test",
     "compile": "hardhat compile",
     "deploy:mainnet": "hardhat run scripts/deploy-core.ts --network celo",
-    "rescue": "hardhat run scripts/rescue-treasury.ts --network celo",
     "deploy:sepolia": "hardhat run scripts/deploy-core.ts --network celo-sepolia"
   },
   "dependencies": {
