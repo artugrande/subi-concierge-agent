@@ -10,14 +10,17 @@
     "test": "hardhat test",
     "compile": "hardhat compile",
     "deploy:mainnet": "hardhat run scripts/deploy-core.ts --network celo",
-    "deploy:sepolia": "hardhat run scripts/deploy-core.ts --network celo-sepolia"
+    "deploy:sepolia": "hardhat run scripts/deploy-core.ts --network celo-sepolia",
+    "verify:onchain": "node scripts/verify-onchain.mjs"
   },
   "dependencies": {
     "@celo/attribution-tags": "^0.3.0",
     "@celo/contractkit": "^8.1.0",
     "@openzeppelin/contracts": "^5.1.0",
     "@rainbow-me/rainbowkit": "^2.2.3",
+    "@selfxyz/common": "^0.0.10",
     "@selfxyz/contracts": "^1.2.3",
+    "@selfxyz/qrcode": "^1.0.25",
     "@tanstack/react-query": "^5.62.11",
     "dotenv": "^16.4.1",
     "ethers": "^6.13.4",
