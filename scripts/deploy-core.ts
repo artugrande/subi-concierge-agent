@@ -16,6 +16,19 @@ import { ethers } from "hardhat";
 
 // Stablecoin de liquidación. Por defecto, USDT en Celo mainnet.
 const ASSET = process.env.SUBI_ASSET ?? "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e";
+
+// Identity Verification Hub V2 de Self. Direcciones tomadas del boilerplate oficial
+// (github.com/selfxyz/self-integration-boilerplate). No inventar: una dirección
+// equivocada acá deja el padrón sin poder verificar a nadie.
+const SELF_HUB: Record<number, string> = {
+  42220: "0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF",     // Celo mainnet
+  11142220: "0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74",  // Celo Sepolia
+};
+
+// La semilla del scope, junto con la dirección del registry, determina el nullifier.
+// Cambiarla invalida el padrón entero, así que se fija una vez y no se toca.
+const SCOPE_SEED = process.env.SUBI_SCOPE_SEED ?? "subi-space";
+const MIN_AGE = Number(process.env.SUBI_MIN_AGE ?? 18);
 const DRAW_RATE_BPS = Number(process.env.SUBI_DRAW_RATE_BPS ?? 400); // 4% anual
 
 /**
@@ -71,10 +84,27 @@ async function main() {
   await distributor.waitForDeployment();
   console.log(`SubiDistributor  ${await distributor.getAddress()}`);
 
-  // 2. registry
-  const registry = await (await ethers.getContractFactory("SubiRegistry")).deploy();
+  // 2. registry, atado al hub de Self de esta red
+  const hub = SELF_HUB[Number(net.chainId)];
+  if (!hub) {
+    throw new Error(
+      `No hay Identity Verification Hub de Self conocido para la chain ${net.chainId}. ` +
+      `Redes soportadas: ${Object.keys(SELF_HUB).join(", ")}.`
+    );
+  }
+  if ((await ethers.provider.getCode(hub)) === "0x") {
+    throw new Error(`El hub de Self ${hub} no tiene código en esta red.`);
+  }
+
+  const registry = await (await ethers.getContractFactory("SubiRegistry")).deploy(
+    hub,
+    SCOPE_SEED,
+    { olderThan: MIN_AGE, forbiddenCountries: [], ofacEnabled: false }
+  );
   await registry.waitForDeployment();
   console.log(`SubiRegistry     ${await registry.getAddress()}`);
+  console.log(`  hub de Self    ${hub}`);
+  console.log(`  scope seed     "${SCOPE_SEED}"  ·  edad mínima ${MIN_AGE}`);
 
   // 3. treasury
   const treasury = await (await ethers.getContractFactory("SubiTreasury"))
@@ -131,6 +161,9 @@ async function main() {
     chainId: Number(net.chainId),
     asset: ASSET,
     drawRateBps: DRAW_RATE_BPS,
+    selfHub: hub,
+    scopeSeed: SCOPE_SEED,
+    minAge: MIN_AGE,
     distributor: await distributor.getAddress(),
     registry: await registry.getAddress(),
     treasury: await treasury.getAddress(),
