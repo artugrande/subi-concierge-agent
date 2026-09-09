@@ -22,6 +22,7 @@ contract SubiRegistry is ISubiRegistry {
     event Registered(address indexed account, bytes32 indexed nullifier);
     event Renewed(address indexed account, uint256 newExpiration);
     event Deregistered(address indexed account);
+    event DistributorSet(address indexed distributor);
     
     // --- Errors -----------------------------------------------------------
     
@@ -30,6 +31,9 @@ contract SubiRegistry is ISubiRegistry {
     error ProofExpired();
     error CooldownNotElapsed();
     error InvalidNullifier();
+    error OnlyOwner();
+    error AlreadyWired();
+    error ZeroAddress();
     
     // --- State ------------------------------------------------------------
     
@@ -39,8 +43,15 @@ contract SubiRegistry is ISubiRegistry {
     /// @notice Rebinding cooldown (30 days)
     uint256 public constant REBIND_COOLDOWN = 30 days;
     
-    /// @notice Distributor contract that receives callbacks
-    address public immutable distributor;
+    /// @notice Distributor contract that receives callbacks. Set once by the owner.
+    /// @dev NOT immutable on purpose: the distributor needs this registry's address and
+    ///      this registry needs the distributor's, so a constructor argument forces a
+    ///      placeholder. The previous version shipped that placeholder (0x…01) to
+    ///      mainnet, so the distributor was never notified of anything.
+    address public distributor;
+
+    /// @notice Owner, allowed to bind the distributor exactly once.
+    address public owner;
     
     /// @notice Total count of active (non-expired) registrations
     uint256 private _activeCount;
@@ -57,8 +68,19 @@ contract SubiRegistry is ISubiRegistry {
     
     // --- Constructor ------------------------------------------------------
     
-    constructor(address distributor_) {
+    constructor() {
+        owner = msg.sender;
+    }
+
+    /**
+     * @notice Bind the distributor. Callable once, by the owner.
+     */
+    function setDistributor(address distributor_) external {
+        if (msg.sender != owner) revert OnlyOwner();
+        if (distributor != address(0)) revert AlreadyWired();
+        if (distributor_ == address(0)) revert ZeroAddress();
         distributor = distributor_;
+        emit DistributorSet(distributor_);
     }
     
     // --- Public Interface -------------------------------------------------
@@ -93,10 +115,11 @@ contract SubiRegistry is ISubiRegistry {
         reg.unbindTime = block.timestamp + REBIND_COOLDOWN;
         nullifierToAddress[nullifier] = msg.sender;
         
-        _activeCount++;
-        
-        // Notify distributor of new registration
+        // El devengo del período que termina se reparte entre los que YA estaban.
+        // Por eso el aviso va antes de incrementar el contador.
         IDistributor(distributor).onRegister(msg.sender);
+
+        _activeCount++;
         
         emit Registered(msg.sender, nullifier);
     }
@@ -125,10 +148,10 @@ contract SubiRegistry is ISubiRegistry {
         delete nullifierToAddress[reg.nullifier];
         delete registrations[msg.sender];
         
-        _activeCount--;
-        
-        // Notify distributor of deregistration
+        // El que se va todavía cuenta para el período que termina.
         IDistributor(distributor).onDeregister(msg.sender);
+
+        _activeCount--;
         
         emit Deregistered(msg.sender);
     }
@@ -143,9 +166,9 @@ contract SubiRegistry is ISubiRegistry {
             if (reg.nullifier != bytes32(0) && block.timestamp > reg.expiration) {
                 delete nullifierToAddress[reg.nullifier];
                 delete registrations[accounts[i]];
-                _activeCount--;
-                
                 IDistributor(distributor).onDeregister(accounts[i]);
+
+                _activeCount--;
                 emit Deregistered(accounts[i]);
             }
         }

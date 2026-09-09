@@ -44,3 +44,4 @@ typechain-types
 
 # Secrets
 secrets.json
+package-lock.json

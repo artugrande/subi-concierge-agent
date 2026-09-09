@@ -22,7 +22,7 @@ export const AGENT_CONFIG = {
   
   // RPC URLs
   CELO_RPC_URL: process.env.CELO_RPC_URL || "https://forno.celo.org",
-  ALFAJORES_RPC_URL: process.env.ALFAJORES_RPC_URL || "https://alfajores-forno.celo-testnet.org",
+  CELO_SEPOLIA_RPC_URL: process.env.CELO_SEPOLIA_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org",
 } as const;
 
 // Validate required configuration

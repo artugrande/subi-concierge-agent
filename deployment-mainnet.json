@@ -1,40 +1,37 @@
 {
   "network": "celo-mainnet",
-  "chainId": "42220",
+  "chainId": 42220,
   "deployer": "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
   "agentId": "9822",
   "attributionTag": "celo_ac17e664a585",
   "asset": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+  "assetSymbol": "USDT",
+  "assetDecimals": 6,
   "contracts": {
-    "treasury": "0xaE18D9E48367Fc3d9D6977C221B1377Ce6B7c1A2",
-    "registry": "0xA6e481f0D115aAd4193f5f8EC135939CF99D6C50",
-    "distributor": "0xB3d836811DC211378285a39B8b0ba2ccCD086D81",
-    "pledgeRegistry": "0x89C15969Fd91271b62BD39a6200B46Abe1534F5d",
-    "asset": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"
+    "distributor": "0x82c3273381F96027f78CcB3595b3606203e453CC",
+    "registry": "0x7eb6a75AeCcD8D90F5f9c2D46eb92ab5535e439A",
+    "treasury": "0xf9b22b915C881F0565CCC7B0874f7F7032eDeb76",
+    "pledgeRegistry": "0xaa572f7F6b141B99768a5eE542967A263d2a8071"
+  },
+  "wiring": {
+    "registry.distributor": "0x82c3273381F96027f78CcB3595b3606203e453CC",
+    "treasury.distributor": "0x82c3273381F96027f78CcB3595b3606203e453CC",
+    "distributor.registry": "0x7eb6a75AeCcD8D90F5f9c2D46eb92ab5535e439A",
+    "distributor.treasury": "0xf9b22b915C881F0565CCC7B0874f7F7032eDeb76",
+    "verifiedOnChain": true
   },
   "config": {
     "drawRateBps": 400,
-    "registryDistributorPlaceholder": "0x0000000000000000000000000000000000000001",
-    "seedAttribution": "subi-hackathon-seed",
+    "seedAttribution": "subi-redeploy-seed",
     "seedAmount": "500000",
     "seedAmountFormatted": "0.5"
   },
-  "transactions": {
-    "treasuryDeploy": "0xd668820c6b24dd1a422c91f5303a409b98d074080f23fb2465b463b9532b63cf",
-    "registryDeploy": "0x847f7c20de60ebb46a32d5be2bb928cfe8181a06986f2fffe7eeed4843d9b3e0",
-    "distributorDeploy": "0x7d0358ba85cbbdb34e9dc79bec1f9aa00696f8fd66f8c7b3e9377269205ce741",
-    "pledgeRegistryDeploy": "0x4973eb5795cf450565ad8c60da28dab6d906e37876469af0d0c84572210853df",
-    "setDistributor": "0x12f0cd8d1d1b2b5196863032a32d37d15bfed10f5c237ad82180f025ddf00d84",
-    "heartbeat": "0xb231f3551595b7ea71f4902d7efe07da3fc582adea2c0fd701d8dc29d631a47e",
-    "approve": "0x657ef99e9360407255cb7a54eb608b27b6b14b2a12a3a1b78484bfc711cf5813",
-    "deposit": "0x7d32f65947d3547c39c158ea0b25f75d40f376d6d2b884b5c3a328d0f699d0ce"
-  },
-  "verifyTx": {
-    "codes": [
-      "celo_ac17e664a585"
-    ],
-    "schemaId": 0
-  },
-  "note": "CREATE (deploy) txs intentionally have NO ERC-8021 suffix (would corrupt initcode). All CALL txs append toDataSuffix('celo_ac17e664a585').",
-  "timestamp": "2026-09-08T21:45:07.523Z"
+  "deployedAt": "2026-09-09T00:41:59Z",
+  "supersedes": {
+    "note": "Despliegue anterior retirado. El registry apuntaba a 0x…01, un placeholder que nunca se reemplazó porque el campo era immutable, así que nunca notificó al distributor. Además no existía camino de fondos entre treasury y distributor y claim() revertía siempre.",
+    "distributor": "0xB3d836811DC211378285a39B8b0ba2ccCD086D81",
+    "registry": "0xA6e481f0D115aAd4193f5f8EC135939CF99D6C50",
+    "treasury": "0xaE18D9E48367Fc3d9D6977C221B1377Ce6B7c1A2",
+    "pledgeRegistry": "0x89C15969Fd91271b62BD39a6200B46Abe1534F5d"
+  }
 }
