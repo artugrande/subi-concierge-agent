@@ -143,6 +143,16 @@ project's endpoints.
 Write tools return `to` / `data` / `value` and stop there. The server holds no keys and
 custodies nothing. See [`docs/MCP.md`](docs/MCP.md).
 
+### Attribution (ERC-8021)
+Every transaction the project sends carries the assigned code `celo_ac17e664a585` as a
+data suffix: the four deployments **and** the three wiring calls. Celo's guidance is
+that a builder tags the transactions it sends, not only contract creations, and reward
+programs credit by that code.
+
+`utils/attribution.ts` loads `@celo/attribution-tags` through a dynamic import wrapped
+in `new Function`, because the package is pure ESM and the Hardhat runner is CommonJS;
+a static import made `npm test` fail to start at all.
+
 ### Celo primitives used
 Fee abstraction (CIP-64) so gas is paid in the payout stablecoin and nobody needs
 CELO; Mento and Ripio wFIAT stablecoins for local-currency payout; MiniPay as the
@@ -152,7 +162,7 @@ distribution channel; ERC-8004 for on-chain agent identity.
 
 ## Tests
 
-**46 passing**, across four suites:
+**56 passing**, across five suites, and `npm test` runs the whole thing:
 
 | Suite | Covers |
 |---|---|
@@ -160,6 +170,7 @@ distribution channel; ERC-8004 for on-chain agent identity.
 | `Wiring.test.ts` | Registry/treasury/distributor wiring, treasury funds counting as distributable, no retroactive dilution on registration, no funds stranded on exit |
 | `SubiDistributor.test.ts` | Distribution math, solvency, O(1) claims, fractional carry |
 | `SubiTreasury.test.ts` | Deposits, attribution ledger, withdrawal authorisation |
+| `Attribution.test.ts` | ERC-8021 tagging, including a real transaction whose calldata is read back from chain and decoded |
 
 `MockSelfHub` replicates the real hub's function signatures, so the callback path is
 exercised for real rather than stubbed around. If Self changes those signatures
@@ -188,11 +199,6 @@ Stated plainly, because a proposal that hides its gaps is not worth evaluating:
 - **The fund is symbolic.** 0.5 USDT seeded. The mechanism is real; the money is not
   yet. Bringing in contributors is the actual next problem, and it is a political one,
   not a technical one.
-- **`test/Attribution.test.ts` does not run.** `@celo/attribution-tags` is ESM and the
-  Hardhat runner is CommonJS. Fixing it means migrating the project to ESM or moving
-  that dependency behind a dynamic import.
-- **The wiring CALLs in `deploy-core.ts` carry no attribution tag**, only the
-  deployments do. Pending confirmation of whether the track requires it on every CALL.
 - **The pilot is not running.** Milestones and the metrics it will be measured
   against are published at https://subi.space/demo — 1,000 people, under 3 minutes to
   register, under 0.5% infrastructure overhead.

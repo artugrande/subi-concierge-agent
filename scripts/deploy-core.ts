@@ -13,6 +13,7 @@
  * Al final el script verifica el cableado y aborta si algo quedó suelto.
  */
 import { ethers } from "hardhat";
+import { withAttribution } from "../utils/attribution";
 
 // Stablecoin de liquidación. Por defecto, USDT en Celo mainnet.
 const ASSET = process.env.SUBI_ASSET ?? "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e";
@@ -57,6 +58,47 @@ async function esperarValor(
   return false;
 }
 
+/**
+ * Envía una llamada a un contrato con la etiqueta ERC-8021 al final del calldata.
+ *
+ * Los despliegues ya se etiquetaban, pero las CALL de cableado no. Los programas
+ * de recompensas de Celo acreditan por código sobre las transacciones que envía
+ * el proyecto, no sólo sobre las creaciones de contrato, así que estas también
+ * cuentan.
+ */
+async function desplegarEtiquetado(
+  nombre: string,
+  args: any[] = []
+): Promise<any> {
+  const signer = (await ethers.getSigners())[0];
+  const factory = await ethers.getContractFactory(nombre);
+
+  const deployTx = await factory.getDeployTransaction(...args);
+  const tx = await signer.sendTransaction({
+    data: await withAttribution(deployTx.data as string),
+  });
+  const receipt = await tx.wait();
+  if (!receipt?.contractAddress) throw new Error(`${nombre}: sin dirección en el recibo`);
+
+  return factory.attach(receipt.contractAddress);
+}
+
+async function llamadaEtiquetada(
+  contrato: any,
+  metodo: string,
+  args: any[],
+  etiqueta: string
+) {
+  const signer = (await ethers.getSigners())[0];
+  const data = contrato.interface.encodeFunctionData(metodo, args);
+  const tx = await signer.sendTransaction({
+    to: await contrato.getAddress(),
+    data: await withAttribution(data),
+  });
+  console.log(`     ${etiqueta}  ${tx.hash}`);
+  return tx.wait();
+}
+
 async function main() {
   const [deployer] = await ethers.getSigners();
   if (!deployer) {
@@ -79,13 +121,11 @@ async function main() {
   console.log(`drawRate   ${DRAW_RATE_BPS} bps\n`);
 
   // 1. distributor (no necesita conocer a nadie todavía)
-  const distributor = await (await ethers.getContractFactory("SubiDistributor"))
-    .deploy(ASSET, DRAW_RATE_BPS);
-  await distributor.waitForDeployment();
+  const distributor = await desplegarEtiquetado("SubiDistributor", [ASSET, DRAW_RATE_BPS]);
   console.log(`SubiDistributor  ${await distributor.getAddress()}`);
 
   // 2. registry, atado al hub de Self de esta red
-  const hub = SELF_HUB[Number(net.chainId)];
+  const hub = process.env.SUBI_SELF_HUB ?? SELF_HUB[Number(net.chainId)];
   if (!hub) {
     throw new Error(
       `No hay Identity Verification Hub de Self conocido para la chain ${net.chainId}. ` +
@@ -96,35 +136,31 @@ async function main() {
     throw new Error(`El hub de Self ${hub} no tiene código en esta red.`);
   }
 
-  const registry = await (await ethers.getContractFactory("SubiRegistry")).deploy(
+  const registry = await desplegarEtiquetado("SubiRegistry", [
     hub,
     SCOPE_SEED,
-    { olderThan: MIN_AGE, forbiddenCountries: [], ofacEnabled: false }
-  );
-  await registry.waitForDeployment();
+    { olderThan: MIN_AGE, forbiddenCountries: [], ofacEnabled: false },
+  ]);
   console.log(`SubiRegistry     ${await registry.getAddress()}`);
   console.log(`  hub de Self    ${hub}`);
   console.log(`  scope seed     "${SCOPE_SEED}"  ·  edad mínima ${MIN_AGE}`);
 
   // 3. treasury
-  const treasury = await (await ethers.getContractFactory("SubiTreasury"))
-    .deploy(ASSET, deployer.address);
-  await treasury.waitForDeployment();
+  const treasury = await desplegarEtiquetado("SubiTreasury", [ASSET, deployer.address]);
   console.log(`SubiTreasury     ${await treasury.getAddress()}`);
 
   // 4. pledge registry
-  const pledges = await (await ethers.getContractFactory("PledgeRegistry")).deploy();
-  await pledges.waitForDeployment();
+  const pledges = await desplegarEtiquetado("PledgeRegistry");
   console.log(`PledgeRegistry   ${await pledges.getAddress()}\n`);
 
   // --- cableado ---
   console.log("cableando…");
-  await (await registry.setDistributor(await distributor.getAddress())).wait();
-  await (await treasury.setDistributor(await distributor.getAddress())).wait();
-  await (await distributor.wire(
-    await registry.getAddress(),
-    await treasury.getAddress()
-  )).wait();
+  await llamadaEtiquetada(registry, "setDistributor",
+    [await distributor.getAddress()], "registry.setDistributor");
+  await llamadaEtiquetada(treasury, "setDistributor",
+    [await distributor.getAddress()], "treasury.setDistributor");
+  await llamadaEtiquetada(distributor, "wire",
+    [await registry.getAddress(), await treasury.getAddress()], "distributor.wire");
 
   // --- verificación: si algo quedó suelto, no sigue ---
   const dAddr = await distributor.getAddress();

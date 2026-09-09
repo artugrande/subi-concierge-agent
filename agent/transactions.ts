@@ -24,10 +24,10 @@ export interface UnsignedTransaction {
  * @param amount - Amount to claim in wei
  * @returns Unsigned transaction with attribution tag
  */
-export function buildClaimUBITransaction(
+export async function buildClaimUBITransaction(
   ubiContractAddress: string,
   amount: bigint
-): UnsignedTransaction {
+): Promise<UnsignedTransaction> {
   // Create contract interface for UBI claim
   const iface = new ethers.Interface([
     "function claim(uint256 amount)",
@@ -36,7 +36,7 @@ export function buildClaimUBITransaction(
   const data = iface.encodeFunctionData("claim", [amount]);
   
   // Return transaction with attribution tag
-  return addAttributionToTx({
+  return await addAttributionToTx({
     to: ubiContractAddress,
     data,
     value: 0n,
@@ -51,18 +51,18 @@ export function buildClaimUBITransaction(
  * @param amount - Amount to pledge in wei
  * @returns Unsigned transaction with attribution tag
  */
-export function buildPledgeUBITransaction(
+export async function buildPledgeUBITransaction(
   pledgeContractAddress: string,
   beneficiary: string,
   amount: bigint
-): UnsignedTransaction {
+): Promise<UnsignedTransaction> {
   const iface = new ethers.Interface([
     "function pledge(address beneficiary, uint256 amount)",
   ]);
   
   const data = iface.encodeFunctionData("pledge", [beneficiary, amount]);
   
-  return addAttributionToTx({
+  return await addAttributionToTx({
     to: pledgeContractAddress,
     data,
     value: amount, // Assuming pledge requires sending value
@@ -76,12 +76,12 @@ export function buildPledgeUBITransaction(
  * @param amount - Amount to send in wei
  * @returns Unsigned transaction with attribution tag
  */
-export function buildTransferTransaction(
+export async function buildTransferTransaction(
   to: string,
   amount: bigint
-): UnsignedTransaction {
+): Promise<UnsignedTransaction> {
   // Even simple transfers need attribution
-  return addAttributionToTx({
+  return await addAttributionToTx({
     to,
     value: amount,
     data: "0x", // Empty data for simple transfer
@@ -97,17 +97,17 @@ export function buildTransferTransaction(
  * @param value - Optional value to send with transaction
  * @returns Unsigned transaction with attribution tag
  */
-export function buildContractCallTransaction(
+export async function buildContractCallTransaction(
   contractAddress: string,
   functionSignature: string,
   args: any[],
   value: bigint = 0n
-): UnsignedTransaction {
+): Promise<UnsignedTransaction> {
   const iface = new ethers.Interface([`function ${functionSignature}`]);
   const functionName = functionSignature.split("(")[0];
   const data = iface.encodeFunctionData(functionName, args);
   
-  return addAttributionToTx({
+  return await addAttributionToTx({
     to: contractAddress,
     data,
     value,
@@ -120,10 +120,10 @@ export function buildContractCallTransaction(
  * @param transactions - Array of transaction builders
  * @returns Array of unsigned transactions with attribution tags
  */
-export function buildTransactionBatch(
-  transactions: (() => UnsignedTransaction)[]
-): UnsignedTransaction[] {
-  return transactions.map(txBuilder => txBuilder());
+export async function buildTransactionBatch(
+  transactions: (() => Promise<UnsignedTransaction>)[]
+): Promise<UnsignedTransaction[]> {
+  return Promise.all(transactions.map((txBuilder) => txBuilder()));
 }
 
 /**
