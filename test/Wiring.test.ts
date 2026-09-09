@@ -10,6 +10,17 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
  * distributor directamente con `asset.mint(distributor)` y porque su propio
  * `beforeEach` desplegaba el registry con el placeholder 0x…01.
  */
+
+/** Da de alta a alguien como lo haría el hub de Self tras validar una prueba. */
+async function altaConSelf(hub: any, registry: any, account: string, nullifier: bigint) {
+  const output = ethers.AbiCoder.defaultAbiCoder().encode(
+    ["tuple(bytes32,uint256,uint256,uint256[4],string,string[],string,string,string,string,string,uint256,bool[3])"],
+    [[ethers.zeroPadValue("0x01", 32), BigInt(account), nullifier, [0n, 0n, 0n, 0n],
+      "ARG", [], "", "ARG", "", "", "", 18n, [false, false, false]]]
+  );
+  await hub.fireVerification(await registry.getAddress(), output, "0x");
+}
+
 describe("Cableado registry / treasury / distributor", function () {
   const DRAW_RATE_BPS = 400; // 4% anual
   const ONE_DAY = 86400;
@@ -25,7 +36,9 @@ describe("Cableado registry / treasury / distributor", function () {
     const distributor = await (await ethers.getContractFactory("SubiDistributor"))
       .deploy(await asset.getAddress(), DRAW_RATE_BPS);
 
-    const registry = await (await ethers.getContractFactory("SubiRegistry")).deploy();
+    const hub = await (await ethers.getContractFactory("MockSelfHub")).deploy();
+    const registry = await (await ethers.getContractFactory("SubiRegistry")).deploy(
+      await hub.getAddress(), "subi-space", { olderThan: 18, forbiddenCountries: [], ofacEnabled: false });
 
     const treasury = await (await ethers.getContractFactory("SubiTreasury"))
       .deploy(await asset.getAddress(), owner.address);
@@ -39,11 +52,11 @@ describe("Cableado registry / treasury / distributor", function () {
     await asset.approve(await treasury.getAddress(), SEED);
     await treasury.deposit(SEED, "seed de la demo");
 
-    return { owner, alice, bob, asset, distributor, registry, treasury };
+    return { owner, alice, bob, hub, asset, distributor, registry, treasury };
   }
 
   it("el registry queda apuntando al distributor, no a un placeholder", async function () {
-    const { registry, distributor } = await deployWired();
+    const { registry, distributor, hub } = await deployWired();
     expect(await registry.distributor()).to.equal(await distributor.getAddress());
     expect(await registry.distributor()).to.not.equal(
       "0x0000000000000000000000000000000000000001"
@@ -51,7 +64,7 @@ describe("Cableado registry / treasury / distributor", function () {
   });
 
   it("el cableado es de una sola vez", async function () {
-    const { registry, distributor, treasury, alice } = await deployWired();
+    const { registry, distributor, treasury, alice, hub } = await deployWired();
     await expect(registry.setDistributor(alice.address)).to.be.revertedWithCustomError(
       registry, "AlreadyWired"
     );
@@ -61,7 +74,7 @@ describe("Cableado registry / treasury / distributor", function () {
   });
 
   it("los fondos del treasury cuentan como distribuibles", async function () {
-    const { distributor, treasury, asset } = await deployWired();
+    const { distributor, treasury, asset, hub } = await deployWired();
 
     // El bug: el distributor no tiene nada propio y aun así hay fondo repartible
     expect(await asset.balanceOf(await distributor.getAddress())).to.equal(0n);
@@ -70,9 +83,9 @@ describe("Cableado registry / treasury / distributor", function () {
   });
 
   it("una persona registrada puede cobrar, con la plata en el treasury", async function () {
-    const { distributor, registry, treasury, asset, alice } = await deployWired();
+    const { distributor, registry, treasury, asset, alice, hub } = await deployWired();
 
-    await registry.connect(alice).register(ethers.id("alice"));
+    await altaConSelf(hub, registry, alice.address, BigInt(ethers.id("alice")));
     await time.increase(30 * ONE_DAY);
 
     const claimable = await distributor.claimable(alice.address);
@@ -88,14 +101,14 @@ describe("Cableado registry / treasury / distributor", function () {
   });
 
   it("registrarse no diluye el período anterior de los que ya estaban", async function () {
-    const { distributor, registry, alice, bob } = await deployWired();
+    const { distributor, registry, alice, bob, hub } = await deployWired();
 
-    await registry.connect(alice).register(ethers.id("alice"));
+    await altaConSelf(hub, registry, alice.address, BigInt(ethers.id("alice")));
     await time.increase(30 * ONE_DAY);
 
     // Lo devengado por alice hasta acá es suyo: bob no puede licuarlo al entrar.
     const antesDeBob = await distributor.claimable(alice.address);
-    await registry.connect(bob).register(ethers.id("bob"));
+    await altaConSelf(hub, registry, bob.address, BigInt(ethers.id("bob")));
     const despuesDeBob = await distributor.claimable(alice.address);
 
     expect(despuesDeBob).to.be.gte(antesDeBob);
@@ -104,9 +117,9 @@ describe("Cableado registry / treasury / distributor", function () {
   });
 
   it("darse de baja devuelve lo no cobrado al pool en lugar de trabarlo", async function () {
-    const { distributor, registry, alice } = await deployWired();
+    const { distributor, registry, alice, hub } = await deployWired();
 
-    await registry.connect(alice).register(ethers.id("alice"));
+    await altaConSelf(hub, registry, alice.address, BigInt(ethers.id("alice")));
     await time.increase(30 * ONE_DAY);
     await distributor.accrue();
 
@@ -120,13 +133,13 @@ describe("Cableado registry / treasury / distributor", function () {
   });
 
   it("volver a registrarse no deja fondos inreclamables", async function () {
-    const { distributor, registry, alice } = await deployWired();
+    const { distributor, registry, alice, hub } = await deployWired();
 
-    await registry.connect(alice).register(ethers.id("alice"));
+    await altaConSelf(hub, registry, alice.address, BigInt(ethers.id("alice")));
     await time.increase(30 * ONE_DAY);
     await registry.connect(alice).deregister();
     await time.increase(31 * ONE_DAY); // pasa el cooldown de rebindeo
-    await registry.connect(alice).register(ethers.id("alice"));
+    await altaConSelf(hub, registry, alice.address, BigInt(ethers.id("alice")));
 
     // el contador y la contabilidad quedan consistentes
     expect(await registry.activeCount()).to.equal(1n);

@@ -4,10 +4,22 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { SubiDistributor, SubiRegistry, MockERC20 } from "../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
+
+/** Da de alta a alguien como lo haría el hub de Self tras validar una prueba. */
+async function altaConSelf(hub: any, registry: any, account: string, nullifier: bigint) {
+  const output = ethers.AbiCoder.defaultAbiCoder().encode(
+    ["tuple(bytes32,uint256,uint256,uint256[4],string,string[],string,string,string,string,string,uint256,bool[3])"],
+    [[ethers.zeroPadValue("0x01", 32), BigInt(account), nullifier, [0n, 0n, 0n, 0n],
+      "ARG", [], "", "ARG", "", "", "", 18n, [false, false, false]]]
+  );
+  await hub.fireVerification(await registry.getAddress(), output, "0x");
+}
+
 describe("SubiDistributor", function () {
   let distributor: SubiDistributor;
   let registry: SubiRegistry;
   let asset: MockERC20;
+  let selfHub: any;
   let owner: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
@@ -36,8 +48,11 @@ describe("SubiDistributor", function () {
       DRAW_RATE_BPS
     );
 
+    const hub = await (await ethers.getContractFactory("MockSelfHub")).deploy();
     const SubiRegistryFactory = await ethers.getContractFactory("SubiRegistry");
-    registry = await SubiRegistryFactory.deploy();
+    registry = await SubiRegistryFactory.deploy(
+      await hub.getAddress(), "subi-space", { olderThan: 18, forbiddenCountries: [], ofacEnabled: false });
+    selfHub = hub;
 
     const SubiTreasuryFactory = await ethers.getContractFactory("SubiTreasury");
     const treasury = await SubiTreasuryFactory.deploy(
@@ -77,7 +92,7 @@ describe("SubiDistributor", function () {
       await asset.mint(await distributor.getAddress(), ethers.parseUnits("1000000", 6)); // 1M USDC
 
       // Register Alice
-      await registry.connect(alice).register(ethers.id("alice-nullifier"));
+      await altaConSelf(selfHub ?? hub, registry, alice.address, BigInt(ethers.id("alice-nullifier")));
     });
 
     it("Should calculate distributable correctly", async function () {
@@ -107,8 +122,8 @@ describe("SubiDistributor", function () {
 
     it("Should distribute evenly among multiple humans", async function () {
       // Register Bob and Carol
-      await registry.connect(bob).register(ethers.id("bob-nullifier"));
-      await registry.connect(carol).register(ethers.id("carol-nullifier"));
+      await altaConSelf(selfHub ?? hub, registry, bob.address, BigInt(ethers.id("bob-nullifier")));
+      await altaConSelf(selfHub ?? hub, registry, carol.address, BigInt(ethers.id("carol-nullifier")));
 
       const activeCount = await registry.activeCount();
       expect(activeCount).to.equal(3);
@@ -189,7 +204,7 @@ describe("SubiDistributor", function () {
     });
 
     it("Should allow verified humans to claim", async function () {
-      await registry.connect(alice).register(ethers.id("alice-nullifier"));
+      await altaConSelf(selfHub ?? hub, registry, alice.address, BigInt(ethers.id("alice-nullifier")));
       
       await time.increase(ONE_DAY);
       await distributor.accrue();
@@ -199,7 +214,7 @@ describe("SubiDistributor", function () {
     });
 
     it("Should handle deregistration correctly", async function () {
-      await registry.connect(alice).register(ethers.id("alice-nullifier"));
+      await altaConSelf(selfHub ?? hub, registry, alice.address, BigInt(ethers.id("alice-nullifier")));
       
       await time.increase(ONE_DAY);
       await distributor.accrue();
@@ -226,7 +241,7 @@ describe("SubiDistributor", function () {
     });
 
     it("Should handle zero balance", async function () {
-      await registry.connect(alice).register(ethers.id("alice-nullifier"));
+      await altaConSelf(selfHub ?? hub, registry, alice.address, BigInt(ethers.id("alice-nullifier")));
       
       await time.increase(ONE_DAY);
       await distributor.accrue();
@@ -238,7 +253,7 @@ describe("SubiDistributor", function () {
       // Sin fondo no hay devengo, y ahí sí no hay nada que cobrar.
       // (Con fondo, el segundo que separa dos bloques ya devenga algo:
       // el reparto es continuo, así que "reclamar en el acto" no existe.)
-      await registry.connect(alice).register(ethers.id("alice-nullifier"));
+      await altaConSelf(selfHub ?? hub, registry, alice.address, BigInt(ethers.id("alice-nullifier")));
 
       await expect(
         distributor.connect(alice).claim()
@@ -247,7 +262,7 @@ describe("SubiDistributor", function () {
 
     it("Should handle multiple accruals between claims", async function () {
       await asset.mint(await distributor.getAddress(), ethers.parseUnits("100000", 6));
-      await registry.connect(alice).register(ethers.id("alice-nullifier"));
+      await altaConSelf(selfHub ?? hub, registry, alice.address, BigInt(ethers.id("alice-nullifier")));
 
       // Multiple accrual calls
       await time.increase(ONE_DAY);

@@ -33,5 +33,8 @@
     "registry": "0xA6e481f0D115aAd4193f5f8EC135939CF99D6C50",
     "treasury": "0xaE18D9E48367Fc3d9D6977C221B1377Ce6B7c1A2",
     "pledgeRegistry": "0x89C15969Fd91271b62BD39a6200B46Abe1534F5d"
-  }
+  },
+  "selfHub": "0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF",
+  "scopeSeed": "subi-space",
+  "minAge": 18
 }

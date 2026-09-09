@@ -1,5 +1,11 @@
 # SUBI Concierge Agent - Hackathon Submission Summary
 
+> **Nota de estado (9 de septiembre de 2026).** Este documento describe lo que se
+> presentó al hackathon y se mantiene como registro de eso. Después de la
+> premiación se encontraron y corrigieron fallas serias, y el sistema se
+> redesplegó. Ver [Después del hackathon](#después-del-hackathon) al final.
+
+
 ## 🎉 Completion Status: READY FOR SUBMISSION
 
 **Date**: September 8, 2026  
@@ -248,3 +254,71 @@ This project is **complete and ready for submission** to the **Judges' Favorite*
 All requirements met. All code pushed. All documentation written.
 
 Thank you for considering SUBI Concierge Agent. 🚀
+
+---
+
+## Después del hackathon
+
+Lo de arriba es el registro de la entrega. Lo que sigue pasó después, y cambia
+cosas importantes.
+
+### Lo que estaba roto
+
+El despliegue original **no podía pagarle a nadie**, por dos fallas independientes:
+
+1. `registry.distributor` en mainnet apuntaba a `0x…01`, un placeholder que quedó
+   del deploy y nunca se reemplazó porque el campo era `immutable`. El registry
+   nunca notificó al distributor, así que los checkpoints jamás se escribieron.
+2. `distributable()` leía sólo el balance del propio distributor, pero los aportes
+   entran al treasury y no existía camino de fondos entre ambos. Con 0,5 USDT en el
+   treasury, `claim()` revertía siempre con `NothingToClaim`.
+
+La suite de tests no lo detectaba porque fondeaba el distributor directo con
+`asset.mint(...)`, sin pasar por el treasury, y porque su propio `beforeEach`
+reproducía el mismo placeholder.
+
+### Lo que se corrigió
+
+- Registry, treasury y distributor se cablean después del deploy y se verifica el
+  cableado; `scripts/deploy-core.ts` aborta si algo queda suelto.
+- `distributable()` cuenta el treasury y `claim()` tira de ahí el faltante.
+- El aviso al distributor ocurre antes de mover el contador del padrón.
+- Dar de baja devuelve lo no cobrado al pool en vez de trabarlo para siempre.
+- El repo no compilaba desde un clone limpio: `@celo/attribution-tags@^1.0.0` no
+  existe en npm, faltaba declarar `@openzeppelin/contracts` y el config compilaba
+  con solc 0.8.20 contra contratos que declaran `^0.8.24`.
+
+### Verificación de identidad, ahora de verdad
+
+En la entrega, el registry aceptaba un nullifier arbitrario por parámetro. Estaba
+declarado como stub y no se fingieron pruebas, pero no probaba nada.
+
+Ahora `SubiRegistry` hereda de `SelfVerificationRoot` de `@selfxyz/contracts`, y el
+alta ocurre **únicamente** en `customVerificationHook`, que sólo puede disparar el
+Identity Verification Hub de Self tras validar la prueba ZK. La dirección que se da
+de alta sale de la propia prueba, así que nadie puede registrar a un tercero.
+`register(bytes32)` ya no existe en la ABI.
+
+### MCP propio
+
+`/api/mcp` expone el estado del padrón y del fondo, y arma transacciones sin firmar.
+Ver [docs/MCP.md](docs/MCP.md).
+
+### Redespliegue
+
+Contratos vigentes en Celo mainnet, con el cableado verificado on-chain:
+
+| Contrato | Dirección |
+|---|---|
+| SubiDistributor | `0x82c3273381F96027f78CcB3595b3606203e453CC` |
+| SubiRegistry | `0x7eb6a75AeCcD8D90F5f9c2D46eb92ab5535e439A` |
+| SubiTreasury | `0xf9b22b915C881F0565CCC7B0874f7F7032eDeb76` |
+| PledgeRegistry | `0xaa572f7F6b141B99768a5eE542967A263d2a8071` |
+
+El set anterior queda retirado y figura en `deployment-mainnet.json` bajo
+`supersedes`, con el motivo.
+
+Con el treasury fondeado con 0,5 USDT y el distributor en cero, `distributable()`
+devuelve `500000`: exactamente la condición que antes daba `0`.
+
+**46 tests en verde**, contra los 2 suites de la entrega.

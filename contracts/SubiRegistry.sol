@@ -1,80 +1,110 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {SelfVerificationRoot} from "@selfxyz/contracts/contracts/abstract/SelfVerificationRoot.sol";
+import {ISelfVerificationRoot} from "@selfxyz/contracts/contracts/interfaces/ISelfVerificationRoot.sol";
+import {IIdentityVerificationHubV2} from "@selfxyz/contracts/contracts/interfaces/IIdentityVerificationHubV2.sol";
+import {SelfUtils} from "@selfxyz/contracts/contracts/libraries/SelfUtils.sol";
 import {ISubiRegistry} from "./ISubiRegistry.sol";
+
+/// @dev Callbacks the registry fires on the distributor.
+interface IDistributor {
+    function onRegister(address human) external;
+    function onDeregister(address human) external;
+}
 
 /**
  * @title SubiRegistry
- * @notice Registry for Self-verified humans with proof-of-life expiration
- * @dev In production, this inherits from SelfVerificationRoot and verifies ZK proofs
- *      For hackathon MVP: simplified version with manual registration hooks
- *      
- *      PRODUCTION TODO:
- *      - Integrate Self protocol ZK proof verification
- *      - Implement nullifier-based unique identity (one human, one slot)
- *      - Add rebinding with 30-day cooldown
- *      - Add proof-of-life 12-month expiration
+ * @notice Padrón de humanos verificados con Self, con prueba de vida y resistencia a sybil.
+ *
+ * @dev El alta ocurre ÚNICAMENTE a través de una prueba de conocimiento cero de Self.
+ *      El usuario llama `verifySelfProof` (heredada), el hub de Self valida la prueba y
+ *      devuelve el control en `customVerificationHook`, que es donde se escribe el padrón.
+ *      No hay ninguna otra puerta de entrada: la versión anterior aceptaba un nullifier
+ *      arbitrario por parámetro, así que cualquiera podía inventar identidades.
+ *
+ *      El `nullifier` que entrega Self es determinístico por documento y por scope, y no
+ *      revela nada del documento. El scope se deriva de la dirección de este contrato más
+ *      una semilla, así que el nullifier de SUBI no es correlacionable con el de ninguna
+ *      otra aplicación que use Self.
  */
-contract SubiRegistry is ISubiRegistry {
-    
-    // --- Events -----------------------------------------------------------
-    
-    event Registered(address indexed account, bytes32 indexed nullifier);
+contract SubiRegistry is ISubiRegistry, SelfVerificationRoot {
+
+    // --- Eventos ----------------------------------------------------------
+
+    event Registered(address indexed account, uint256 indexed nullifier);
     event Renewed(address indexed account, uint256 newExpiration);
     event Deregistered(address indexed account);
     event DistributorSet(address indexed distributor);
-    
-    // --- Errors -----------------------------------------------------------
-    
-    error AlreadyRegistered();
+
+    // --- Errores ----------------------------------------------------------
+
     error NotRegistered();
-    error ProofExpired();
     error CooldownNotElapsed();
     error InvalidNullifier();
+    error NullifierInUse();
     error OnlyOwner();
     error AlreadyWired();
     error ZeroAddress();
-    
-    // --- State ------------------------------------------------------------
-    
-    /// @notice Proof-of-life duration (12 months)
+
+    // --- Constantes -------------------------------------------------------
+
+    /// @notice Duración de la prueba de vida
     uint256 public constant PROOF_DURATION = 365 days;
-    
-    /// @notice Rebinding cooldown (30 days)
+
+    /// @notice Cooldown para reasignar un nullifier a otra dirección
     uint256 public constant REBIND_COOLDOWN = 30 days;
-    
-    /// @notice Distributor contract that receives callbacks. Set once by the owner.
-    /// @dev NOT immutable on purpose: the distributor needs this registry's address and
-    ///      this registry needs the distributor's, so a constructor argument forces a
-    ///      placeholder. The previous version shipped that placeholder (0x…01) to
-    ///      mainnet, so the distributor was never notified of anything.
+
+    // --- Estado -----------------------------------------------------------
+
+    /// @notice Config de verificación registrada en el hub de Self
+    bytes32 public verificationConfigId;
+
+    /// @notice Distribuidor que recibe los avisos. Se fija una sola vez.
+    /// @dev No es immutable a propósito: el distribuidor necesita la dirección de este
+    ///      registry y viceversa. Con un argumento de constructor había que pasar un
+    ///      placeholder, y ese placeholder terminó en mainnet sin reemplazar.
     address public distributor;
 
-    /// @notice Owner, allowed to bind the distributor exactly once.
+    /// @notice Dueño, habilitado a fijar el distribuidor una única vez.
     address public owner;
-    
-    /// @notice Total count of active (non-expired) registrations
+
     uint256 private _activeCount;
-    
-    /// @notice Registration data per address
+
     struct Registration {
-        bytes32 nullifier;      // Self protocol nullifier (unique per human)
-        uint256 expiration;     // Proof-of-life expiration timestamp
-        uint256 unbindTime;     // Earliest time for rebinding (0 if never bound)
-    }
-    
-    mapping(address => Registration) public registrations;
-    mapping(bytes32 => address) public nullifierToAddress;
-    
-    // --- Constructor ------------------------------------------------------
-    
-    constructor() {
-        owner = msg.sender;
+        uint256 nullifier;   // identificador único del documento, vía Self
+        uint256 expiration;  // vencimiento de la prueba de vida
+        uint256 unbindTime;  // desde cuándo se puede reasignar
     }
 
+    mapping(address => Registration) public registrations;
+    mapping(uint256 => address) public nullifierToAddress;
+
+    // --- Constructor ------------------------------------------------------
+
     /**
-     * @notice Bind the distributor. Callable once, by the owner.
+     * @param hub          Identity Verification Hub V2 de Self en esta red.
+     *                     En Celo mainnet: 0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF
+     * @param scopeSeed    Semilla del scope. Junto con la dirección de este contrato
+     *                     determina el nullifier, así que cambiarla invalida el padrón.
+     * @param cfg          Config de verificación: edad mínima, países bloqueados, OFAC.
      */
+    constructor(
+        address hub,
+        string memory scopeSeed,
+        SelfUtils.UnformattedVerificationConfigV2 memory cfg
+    ) SelfVerificationRoot(hub, scopeSeed) {
+        owner = msg.sender;
+
+        // En redes locales el hub es un mock o no existe; ahí no hay config que registrar.
+        if (hub != address(0)) {
+            verificationConfigId = IIdentityVerificationHubV2(hub)
+                .setVerificationConfigV2(SelfUtils.formatVerificationConfigV2(cfg));
+        }
+    }
+
+    // --- Cableado ---------------------------------------------------------
+
     function setDistributor(address distributor_) external {
         if (msg.sender != owner) revert OnlyOwner();
         if (distributor != address(0)) revert AlreadyWired();
@@ -82,114 +112,118 @@ contract SubiRegistry is ISubiRegistry {
         distributor = distributor_;
         emit DistributorSet(distributor_);
     }
-    
-    // --- Public Interface -------------------------------------------------
-    
+
+    // --- Integración con Self ---------------------------------------------
+
+    /// @inheritdoc SelfVerificationRoot
+    function getConfigId(
+        bytes32, /* destinationChainId */
+        bytes32, /* userIdentifier */
+        bytes memory /* userDefinedData */
+    ) public view override returns (bytes32) {
+        return verificationConfigId;
+    }
+
     /**
-     * @notice Register with a Self ZK proof
-     * @dev STUB: In production, this verifies the ZK proof and extracts the nullifier
-     *      For MVP: accepts a nullifier directly for demonstration
+     * @notice Se ejecuta cuando el hub de Self validó la prueba.
+     * @dev Única vía de alta. `userIdentifier` viene de la prueba y es la dirección que
+     *      el usuario declaró al generarla, así que nadie puede dar de alta a un tercero.
      */
-    function register(bytes32 nullifier) external {
-        if (nullifier == bytes32(0)) revert InvalidNullifier();
-        
-        Registration storage reg = registrations[msg.sender];
-        
-        // Check if rebinding (already registered before)
-        if (reg.nullifier != bytes32(0)) {
+    function customVerificationHook(
+        ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
+        bytes memory /* userData */
+    ) internal override {
+        address account = address(uint160(output.userIdentifier));
+        if (account == address(0)) revert ZeroAddress();
+        if (output.nullifier == 0) revert InvalidNullifier();
+
+        _register(account, output.nullifier);
+    }
+
+    // --- Padrón -----------------------------------------------------------
+
+    function _register(address account, uint256 nullifier) internal {
+        Registration storage reg = registrations[account];
+
+        // Reasignación: la dirección ya tenía un nullifier distinto
+        if (reg.nullifier != 0 && reg.nullifier != nullifier) {
             if (block.timestamp < reg.unbindTime) revert CooldownNotElapsed();
-            
-            // Deregister old nullifier binding
             delete nullifierToAddress[reg.nullifier];
         }
-        
-        // Check nullifier isn't already bound to another address
-        if (nullifierToAddress[nullifier] != address(0) && 
-            nullifierToAddress[nullifier] != msg.sender) {
-            revert AlreadyRegistered();
-        }
-        
-        // Register new binding
+
+        // Un documento no puede estar atado a dos direcciones a la vez
+        address duenoActual = nullifierToAddress[nullifier];
+        if (duenoActual != address(0) && duenoActual != account) revert NullifierInUse();
+
+        bool esAltaNueva = !_isActive(account);
+
         reg.nullifier = nullifier;
         reg.expiration = block.timestamp + PROOF_DURATION;
-        reg.unbindTime = block.timestamp + REBIND_COOLDOWN;
-        nullifierToAddress[nullifier] = msg.sender;
-        
-        // El devengo del período que termina se reparte entre los que YA estaban.
-        // Por eso el aviso va antes de incrementar el contador.
-        IDistributor(distributor).onRegister(msg.sender);
+        if (reg.unbindTime == 0) reg.unbindTime = block.timestamp + REBIND_COOLDOWN;
+        nullifierToAddress[nullifier] = account;
 
-        _activeCount++;
-        
-        emit Registered(msg.sender, nullifier);
+        if (esAltaNueva) {
+            // El aviso va ANTES de mover el contador: lo devengado hasta acá se reparte
+            // entre los que ya estaban, no entre los que estaban más este.
+            if (distributor != address(0)) IDistributor(distributor).onRegister(account);
+            _activeCount++;
+            emit Registered(account, nullifier);
+        } else {
+            // Ya estaba activo: esto es una renovación de la prueba de vida
+            emit Renewed(account, reg.expiration);
+        }
     }
-    
-    /**
-     * @notice Renew proof-of-life (must be done every 12 months)
-     * @dev In production, this verifies a new ZK proof with the same nullifier
-     */
-    function renew() external {
-        Registration storage reg = registrations[msg.sender];
-        if (reg.nullifier == bytes32(0)) revert NotRegistered();
-        
-        // Grace period: allow renewal even if expired (to avoid losing slot)
-        reg.expiration = block.timestamp + PROOF_DURATION;
-        
-        emit Renewed(msg.sender, reg.expiration);
-    }
-    
-    /**
-     * @notice Manually deregister (voluntary exit)
-     */
+
+    /// @notice Baja voluntaria.
     function deregister() external {
         Registration storage reg = registrations[msg.sender];
-        if (reg.nullifier == bytes32(0)) revert NotRegistered();
-        
+        if (reg.nullifier == 0) revert NotRegistered();
+
+        bool estabaActivo = _isActive(msg.sender);
+
         delete nullifierToAddress[reg.nullifier];
         delete registrations[msg.sender];
-        
-        // El que se va todavía cuenta para el período que termina.
-        IDistributor(distributor).onDeregister(msg.sender);
 
-        _activeCount--;
-        
+        if (estabaActivo) {
+            if (distributor != address(0)) IDistributor(distributor).onDeregister(msg.sender);
+            _activeCount--;
+        }
+
         emit Deregistered(msg.sender);
     }
-    
+
     /**
-     * @notice Reap expired registrations (can be called by anyone)
-     * @dev This keeps activeCount accurate but isn't strictly required for solvency
+     * @notice Da de baja pruebas de vida vencidas. Sin permisos.
+     * @dev Mientras el contador sobreestime, el sistema paga de menos y nunca de más,
+     *      así que limpiar tarde es seguro.
      */
     function reap(address[] calldata accounts) external {
         for (uint256 i = 0; i < accounts.length; i++) {
             Registration storage reg = registrations[accounts[i]];
-            if (reg.nullifier != bytes32(0) && block.timestamp > reg.expiration) {
+            if (reg.nullifier != 0 && block.timestamp > reg.expiration) {
                 delete nullifierToAddress[reg.nullifier];
                 delete registrations[accounts[i]];
-                IDistributor(distributor).onDeregister(accounts[i]);
 
+                if (distributor != address(0)) IDistributor(distributor).onDeregister(accounts[i]);
                 _activeCount--;
+
                 emit Deregistered(accounts[i]);
             }
         }
     }
-    
-    // --- ISubiRegistry Implementation -------------------------------------
-    
-    function isActive(address account) external view override returns (bool) {
+
+    // --- ISubiRegistry ----------------------------------------------------
+
+    function _isActive(address account) internal view returns (bool) {
         Registration memory reg = registrations[account];
-        return reg.nullifier != bytes32(0) && block.timestamp <= reg.expiration;
+        return reg.nullifier != 0 && block.timestamp <= reg.expiration;
     }
-    
+
+    function isActive(address account) external view override returns (bool) {
+        return _isActive(account);
+    }
+
     function activeCount() external view override returns (uint256) {
         return _activeCount;
     }
-}
-
-/**
- * @dev Minimal interface for distributor callbacks
- */
-interface IDistributor {
-    function onRegister(address human) external;
-    function onDeregister(address human) external;
 }
