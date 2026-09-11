@@ -51,6 +51,7 @@ owns the treasury or the distributor. It exits non-zero if any check fails.
 Expected output ends with `Todo verificado contra la cadena.`
 
 The source of all four contracts is verified on
+[Celoscan](https://celoscan.io/address/0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232#code) (exact match),
 [Blockscout](https://celo.blockscout.com/address/0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232#code)
 (full match) and on Sourcify (exact match, runtime and creation), so the explorer shows the exact
 code behind each address. To re-run it: `npx hardhat verify --network celo <address> <args>`;
