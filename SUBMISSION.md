@@ -1,6 +1,6 @@
 # SUBI Concierge Agent
 
-**Celo Agents at Work — Judges' Favorite**
+**Celo Agents at Work Hackathon** · primary track: **Judges' Favorite**
 
 A conversational agent that takes a person from zero to receiving a universal basic
 income funded by space resources: verify identity with Self, contribute to the
@@ -11,10 +11,24 @@ claimed.
 - **Full proposal:** https://subi.space/propuesta
 - **Agent ID (ERC-8004):** 9822 · **Attribution tag:** `celo_ac17e664a585`
 
-> This document describes the **current state** of the project. It has moved
-> substantially since the judging snapshot; the [Trajectory](#trajectory) section at
-> the end says exactly what changed and when, so nothing here reads as a claim about
-> what was judged.
+> This document describes the **current state** of the project as of 9 September 2026.
+> It has moved substantially in the last week; the [Trajectory](#trajectory) section at
+> the end says exactly what changed and when, including two faults that were live on
+> mainnet and are now fixed.
+
+**Verify it in five minutes**, without a wallet or any funds:
+
+```bash
+npm install
+npm run verify:onchain   # reads Celo mainnet and checks every claim below
+npm test                 # 58 contract tests
+```
+
+`verify:onchain` does not trust this repository: it takes the addresses from
+`deployment-mainnet.json` and confirms against the chain that the contracts exist, that
+the cross-wiring resolves in all three directions, that the treasury balance counts as
+distributable, and that Self's config and scope are registered against the real hub. It
+exits non-zero if anything fails.
 
 ---
 
@@ -123,7 +137,7 @@ so contributions never have to be pre-moved.
 
 ### Conversational agent
 Guides a user through verify → contribute → claim, in the currency they live in.
-Payouts can settle in any of 21 local stablecoins on Celo, including wARS with a
+Payouts can settle in any of 13 currencies reachable from USDT in a single swap, including wARS with a
 zero-cost off-ramp for Argentina.
 
 ### MCP server — `/api/mcp`
@@ -140,29 +154,35 @@ project's endpoints.
 | `subi_build_deposit` | Builds the `approve` + `deposit`, **unsigned** |
 | `subi_build_claim` | Builds the `claim`, **unsigned** |
 
-Write tools return `to` / `data` / `value` and stop there. The server holds no keys and
-custodies nothing. See [`docs/MCP.md`](docs/MCP.md).
+Write tools return `to` / `data` / `value` / `feeCurrency` and stop there. The server
+holds no keys and custodies nothing. See [`docs/MCP.md`](docs/MCP.md).
 
 ### Attribution (ERC-8021)
-Every transaction the project sends carries the assigned code `celo_ac17e664a585` as a
-data suffix: the four deployments **and** the three wiring calls. Celo's guidance is
-that a builder tags the transactions it sends, not only contract creations, and reward
-programs credit by that code.
+The assigned code is `celo_ac17e664a585`. Tagging is wired into the deploy script and into
+every transaction the agent and the MCP build, and is covered by tests.
+
+It landed **after** the current contracts were deployed. Verified against the chain, the
+four deployment transactions and the three wiring calls **do not carry the suffix**, and
+ERC-8021 has no backfill: a tag cannot be added to a transaction once it is sent.
+Transactions sent from here on carry it. Stated because it is checkable, and a reader
+would find it.
 
 `utils/attribution.ts` loads `@celo/attribution-tags` through a dynamic import wrapped
 in `new Function`, because the package is pure ESM and the Hardhat runner is CommonJS;
-a static import made `npm test` fail to start at all.
+a static import made `npm test` fail to start at all, which is the reason the tagging was
+not effective at deploy time.
 
 ### Celo primitives used
-Fee abstraction (CIP-64) so gas is paid in the payout stablecoin and nobody needs
-CELO; Mento and Ripio wFIAT stablecoins for local-currency payout; MiniPay as the
+Fee abstraction (CIP-64): every transaction the agent and the MCP build carries
+`feeCurrency`, so gas is paid in the payout stablecoin and nobody needs CELO. A wallet
+without CIP-64 support can ignore the field. Covered by a test. Mento and Ripio wFIAT stablecoins for local-currency payout; MiniPay as the
 distribution channel; ERC-8004 for on-chain agent identity.
 
 ---
 
 ## Tests
 
-**56 passing**, across five suites, and `npm test` runs the whole thing:
+**58 passing**, across five suites, and `npm test` runs the whole thing:
 
 | Suite | Covers |
 |---|---|
@@ -196,6 +216,10 @@ npm run deploy:mainnet        # deploys the four contracts and verifies the wiri
 
 Stated plainly, because a proposal that hides its gaps is not worth evaluating:
 
+- **The register is empty.** `activeCount()` is `0`: no human has completed a Self
+  verification against this registry on mainnet yet. The path is live and provable from
+  the chain, but it has not been walked end to end in production. That is the honest
+  reading of `npm run verify:onchain`, which reports it.
 - **The fund is symbolic.** 0.5 USDT seeded. The mechanism is real; the money is not
   yet. Bringing in contributors is the actual next problem, and it is a political one,
   not a technical one.
@@ -207,12 +231,12 @@ Stated plainly, because a proposal that hides its gaps is not worth evaluating:
 
 ## Trajectory
 
-The judged submission and this document are not the same thing, and the difference
-matters.
+What this project looked like a week ago and what it looks like now are not the same
+thing, and the difference matters more than a clean narrative would.
 
-**At judging**, the register accepted a nullifier as a parameter. It was labelled a
-stub and no proofs were faked, but it proved nothing. Two further faults were found
-afterwards, and together they meant the deployed system **could not pay anyone**:
+**Until 8 September**, the register accepted a nullifier as a parameter. It was
+labelled a stub and no proofs were faked, but it proved nothing. Two further faults were
+found alongside it, and together they meant the deployed system **could not pay anyone**:
 
 1. `registry.distributor` on mainnet pointed at `0x…01`, a deploy-time placeholder
    that was never replaced because the field was `immutable`. The registry never
@@ -226,7 +250,7 @@ The test suite did not catch either, because it funded the distributor directly 
 
 **Since then:** both faults fixed and verified on-chain, the four contracts redeployed
 with verified wiring, real Self verification integrated, the MCP built, and the test
-count taken from 2 suites to 46 passing tests. The superseded deployment is recorded
+count taken from 2 suites to 58 passing tests. The superseded deployment is recorded
 in `deployment-mainnet.json` under `supersedes`, with the reason.
 
 The proof that the money path works is one read: with the treasury holding 0.5 USDT

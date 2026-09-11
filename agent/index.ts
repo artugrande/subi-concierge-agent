@@ -6,6 +6,7 @@ import {
   buildTransferTransaction,
   getAgentInfo
 } from "./transactions";
+import deployment from "./deployment-mainnet.json";
 
 /**
  * SUBI Concierge Agent
@@ -34,30 +35,30 @@ async function main() {
   console.log();
   
   // Example: Build transactions (would be triggered by user requests)
-  console.log("Example: Building UBI claim transaction...");
-  const ubiContractAddress = "0x0000000000000000000000000000000000000000"; // Placeholder
-  const claimTx = buildClaimUBITransaction(
-    ubiContractAddress,
-    ethers.parseEther("10")
-  );
-  console.log("Claim transaction built:");
-  console.log("  To:", claimTx.to);
+  // Direcciones reales del despliegue, no placeholders: un 0x000... arma calldata
+  // que parece válida y revierte contra la cadena.
+  console.log("Ejemplo: transacción de cobro...");
+  const claimTx = await buildClaimUBITransaction(deployment.contracts.distributor);
+  console.log("  A:", claimTx.to);
+  console.log("  feeCurrency:", claimTx.feeCurrency);
   console.log("  Data:", claimTx.data?.substring(0, 66) + "...");
-  console.log("  (Attribution tag included in data)");
+  console.log("  (lleva la etiqueta de atribución)");
   console.log();
   
-  console.log("Example: Building UBI pledge transaction...");
-  const pledgeContractAddress = "0x0000000000000000000000000000000000000000"; // Placeholder
-  const pledgeTx = buildPledgeUBITransaction(
-    pledgeContractAddress,
-    "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
-    ethers.parseEther("5")
-  );
-  console.log("Pledge transaction built:");
-  console.log("  To:", pledgeTx.to);
-  console.log("  Value:", pledgeTx.value?.toString());
+  console.log("Ejemplo: registrar un compromiso público...");
+  const ahora = BigInt(Math.floor(Date.now() / 1000));
+  const pledgeTx = await buildPledgeUBITransaction(deployment.contracts.pledgeRegistry, {
+    name: "Organización de ejemplo",
+    revenuePercentBps: 250,          // 2,5% de los ingresos
+    annualFloorUSD: 1_000_000n,
+    startDate: ahora,
+    endDate: ahora + 31_536_000n,    // un año
+    reportURI: "ipfs://informe-de-ejemplo",
+  });
+  console.log("  A:", pledgeTx.to);
+  console.log("  feeCurrency:", pledgeTx.feeCurrency);
   console.log("  Data:", pledgeTx.data?.substring(0, 66) + "...");
-  console.log("  (Attribution tag included in data)");
+  console.log("  (lleva la etiqueta de atribución)");
   console.log();
   
   console.log("Example: Building simple transfer transaction...");

@@ -89,12 +89,19 @@ describe("Attribution Tags", function () {
 
   describe("builders del agente", function () {
     const addr = "0x0000000000000000000000000000000000000002";
-    const beneficiario = "0x0000000000000000000000000000000000000003";
+    const pledge = {
+      name: "Organización de prueba",
+      revenuePercentBps: 250,
+      annualFloorUSD: 1_000_000n,
+      startDate: 1_800_000_000n,
+      endDate: 1_900_000_000n,
+      reportURI: "ipfs://informe",
+    };
 
     it("todas las transacciones que arma el agente llevan la etiqueta", async function () {
       const txs = [
-        await buildClaimUBITransaction(addr, 1000n),
-        await buildPledgeUBITransaction(addr, beneficiario, 1000n),
+        await buildClaimUBITransaction(addr),
+        await buildPledgeUBITransaction(addr, pledge),
         await buildTransferTransaction(addr, 1n),
         await buildContractCallTransaction(addr, "foo()", []),
       ];
@@ -103,6 +110,30 @@ describe("Attribution Tags", function () {
         expect(ethers.isHexString(tx.data), `data inválida: ${tx.data}`).to.equal(true);
         expect(tx.data.endsWith(expectedSuffix.slice(2))).to.equal(true);
       }
+    });
+
+    it("todas llevan feeCurrency, así el gas se paga en la stablecoin y no en CELO", async function () {
+      const txs = [
+        await buildClaimUBITransaction(addr),
+        await buildPledgeUBITransaction(addr, pledge),
+        await buildTransferTransaction(addr, 1n),
+      ];
+      for (const tx of txs) {
+        expect(ethers.isAddress(tx.feeCurrency), `sin feeCurrency: ${tx.feeCurrency}`).to.equal(true);
+      }
+    });
+
+    // Este es el test que faltaba. Mirar sólo el sufijo de atribución deja pasar
+    // calldata que revierte: la etiqueta se ve igual de bien sobre un selector
+    // que no existe en el contrato. Acá se compara contra la firma real.
+    it("el selector coincide con la firma realmente desplegada", async function () {
+      const claim = await buildClaimUBITransaction(addr);
+      expect(claim.data.slice(0, 10)).to.equal(ethers.id("claim()").slice(0, 10));
+
+      const crear = await buildPledgeUBITransaction(addr, pledge);
+      expect(crear.data.slice(0, 10)).to.equal(
+        ethers.id("createPledge(string,uint256,uint256,uint256,uint256,string)").slice(0, 10)
+      );
     });
   });
 
