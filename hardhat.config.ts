@@ -38,6 +38,23 @@ const config: HardhatUserConfig = {
       chainId: 42220,
     },
   },
+  // Verificación del código fuente en Blockscout y Sourcify. Ninguno pide clave:
+  // Blockscout acepta cualquier valor como apiKey. Para Celoscan haría falta una
+  // key de Etherscan V2.
+  etherscan: {
+    apiKey: { celo: "blockscout" },
+    customChains: [
+      {
+        network: "celo",
+        chainId: 42220,
+        urls: {
+          apiURL: "https://celo.blockscout.com/api",
+          browserURL: "https://celo.blockscout.com",
+        },
+      },
+    ],
+  },
+  sourcify: { enabled: true },
   paths: {
     sources: "./contracts",
     tests: "./test",

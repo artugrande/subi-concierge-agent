@@ -19,10 +19,10 @@ Submitted to the **Celo Agents at Work Hackathon**, primary track **Judges' Favo
 
 | Contract | Address |
 |---|---|
-| SubiDistributor | [`0x1f945618F4bFa0e131E07FfA0335e7Ada6556279`](https://celoscan.io/address/0x1f945618F4bFa0e131E07FfA0335e7Ada6556279) |
-| SubiRegistry | [`0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232`](https://celoscan.io/address/0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232) |
-| SubiTreasury | [`0x093D55468acee5a9b11644d1E55097C4E99C2739`](https://celoscan.io/address/0x093D55468acee5a9b11644d1E55097C4E99C2739) |
-| PledgeRegistry | [`0x642b4F2737E85f42bae5Fc4830544EBCf48F1F13`](https://celoscan.io/address/0x642b4F2737E85f42bae5Fc4830544EBCf48F1F13) |
+| SubiDistributor | [`0x1f945618F4bFa0e131E07FfA0335e7Ada6556279`](https://celo.blockscout.com/address/0x1f945618F4bFa0e131E07FfA0335e7Ada6556279#code) |
+| SubiRegistry | [`0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232`](https://celo.blockscout.com/address/0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232#code) |
+| SubiTreasury | [`0x093D55468acee5a9b11644d1E55097C4E99C2739`](https://celo.blockscout.com/address/0x093D55468acee5a9b11644d1E55097C4E99C2739#code) |
+| PledgeRegistry | [`0x642b4F2737E85f42bae5Fc4830544EBCf48F1F13`](https://celo.blockscout.com/address/0x642b4F2737E85f42bae5Fc4830544EBCf48F1F13#code) |
 | Asset (USDT) | [`0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e`](https://celoscan.io/address/0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e) |
 
 Canonical source: [`deployment-mainnet.json`](deployment-mainnet.json), which also records the
@@ -49,6 +49,13 @@ hub, that the unverified registration path is absent from the deployed bytecode,
 owns the treasury or the distributor. It exits non-zero if any check fails.
 
 Expected output ends with `Todo verificado contra la cadena.`
+
+The source of all four contracts is verified on
+[Blockscout](https://celo.blockscout.com/address/0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232#code)
+(full match) and on Sourcify (exact match, runtime and creation), so the explorer shows the exact
+code behind each address. To re-run it: `npx hardhat verify --network celo <address> <args>`;
+the registry's constructor arguments are in
+[`scripts/verify-args/registry.cjs`](scripts/verify-args/registry.cjs).
 
 Prefer to check without cloning anything? These three reads settle the substance:
 
