@@ -14,7 +14,8 @@ Submitted to the **Celo Agents at Work Hackathon**, primary track **Judges' Favo
 | Attribution tag (ERC-8021) | `celo_ac17e664a585` |
 | Agent wallet | `0x35422f585e1f570515147E557aEF8fD6a6e1b3b3` |
 | Network | Celo mainnet, chain id `42220` |
-| Live site | https://subi.space · [demo](https://subi.space/demo) · [proposal](https://subi.space/propuesta) |
+| Live site | https://subi.space · [demo](https://subi.space/demo) · [verify](https://subi.space/verify) · [dashboard](https://subi.space/dashboard) · [proposal](https://subi.space/proposal) |
+| Demo video | [on X](https://x.com/ArtuGrande/status/2098540560306823513) |
 
 | Contract | Address |
 |---|---|
@@ -94,10 +95,10 @@ The hub address comes from Self's own integration boilerplate, not from guesswor
 deploy script resolves it by chain id and aborts if the network has none or the hub has no
 code.
 
-**Not yet real.** `activeCount()` is currently `0`: no human has completed a Self
-verification against this registry on mainnet. The path is live and provable, but it has not
-been walked end to end in production yet. Stated here rather than left for a reader to
-discover.
+**Walked end to end, once.** The first registration landed on 11 September 2026
+([`0x6e4833…2381`](https://celoscan.io/tx/0x6e4833ea0c6ff31cc60f9c9d3407db61be8e985c837b68c4c26087ce09e02381)), submitted by Self's relayer, and `activeCount()` is now
+`1`. That person is the author, verifying with his own passport. One registration proves the
+path works on mainnet; it is not adoption, and it is stated that way on purpose.
 
 ---
 
