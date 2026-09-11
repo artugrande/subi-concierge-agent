@@ -1,155 +1,82 @@
-# SUBI Concierge Agent API
+# SUBI Concierge Agent · transaction builders
 
-Agent interface for building unsigned transactions for the SUBI (Space Universal Basic Income) system.
+`agent/transactions.ts` builds the transactions a user, or another agent, signs to use SUBI on
+Celo mainnet. It builds them and returns them. It never signs or sends anything, and it holds
+no keys.
 
-## Overview
+Every transaction built here carries two things:
 
-This agent builds unsigned transactions compatible with celo-mcp style transaction building for:
+- **The attribution tag** (ERC-8021) `celo_ac17e664a585`, appended to the calldata.
+- **`feeCurrency`** (CIP-64) set to USDT, so gas is paid in the same stablecoin being moved and
+  nobody needs to hold CELO. A wallet without CIP-64 support can ignore the field.
 
-- **Pledge**: Deposit stablecoins to the treasury with attribution
-- **Claim**: Claim accumulated UBI dividend
-- **Register**: Register with Self-verified proof (stub for hackathon)
-- **Create Pledge**: Publish Space Dividend Pledge commitment on-chain
+Contract addresses come from [`deployment-mainnet.json`](deployment-mainnet.json), the same
+file the rest of the repo reads. Nothing here hardcodes them.
 
-## Configuration
+## Builders
 
-Agent wallet is pre-configured for Celo mainnet:
+| Function | Builds |
+|---|---|
+| `buildClaimUBITransaction(distributor)` | `SubiDistributor.claim()`. It takes no amount: the amount is derived from the accumulated index |
+| `buildDepositTransactions(treasury, amount, attribution)` | `approve` + `SubiTreasury.deposit(amount, attribution)`, two transactions |
+| `buildPledgeUBITransaction(pledgeRegistry, pledge)` | `PledgeRegistry.createPledge(...)`, a public commitment to contribute |
+| `buildTransferTransaction(to, amount)` | A plain transfer, also tagged |
+| `buildContractCallTransaction(address, signature, args, value?)` | Any other call |
+| `buildTransactionBatch(builders)` | Several of the above at once |
+| `getAgentInfo()` | Agent ID, wallet, attribution tag and fee currency |
 
-```typescript
-AGENT_ID: string              // ERC-8004 Agent ID (to be assigned)
-AGENT_WALLET: string          // 0x35422f585e1f570515147E557aEF8fD6a6e1b3b3 (funded)
-ATTRIBUTION_TAG: string       // Awaiting Celo Builders registration
-```
+## Examples
 
-**Wallet Status**: Funded with ~1.98 USDT on Celo mainnet. Native CELO = 0 (relies on CIP-64 fee abstraction).
+```ts
+import deployment from "./deployment-mainnet.json";
+import {
+  buildClaimUBITransaction,
+  buildDepositTransactions,
+  buildPledgeUBITransaction,
+} from "./transactions";
 
-**Important**: First registry mint may require tiny CELO top-up (~0.001 CELO) if fee abstraction is not yet active for that contract. Subsequent claims use CIP-64.
+// Claim what has accrued.
+const claim = await buildClaimUBITransaction(deployment.contracts.distributor);
 
-After deployment, update contract addresses:
+// Contribute 10 USDT (6 decimals). Returns [approve, deposit].
+const [approve, deposit] = await buildDepositTransactions(
+  deployment.contracts.treasury,
+  10_000_000n,
+  "Organisation name",
+);
 
-```typescript
-import { updateConfig } from "./config";
-
-updateConfig("CELO_MAINNET", {
-  treasury: "0x...",
-  registry: "0x...",
-  distributor: "0x...",
-  pledgeRegistry: "0x...",
+// Publish a Space Dividend Pledge.
+const now = BigInt(Math.floor(Date.now() / 1000));
+const pledge = await buildPledgeUBITransaction(deployment.contracts.pledgeRegistry, {
+  name: "Organisation name",
+  revenuePercentBps: 250,        // 2.5% of revenue
+  annualFloorUSD: 1_000_000n,
+  startDate: now,
+  endDate: now + 31_536_000n,    // one year
+  reportURI: "ipfs://…",
 });
 ```
 
-## Usage Examples
+Each result is `{ to, data, value, feeCurrency }`, ready for a wallet to sign.
 
-### Build Pledge Transaction
+## Registration is deliberately not here
 
-```typescript
-import { buildPledgeTransaction, usdToTokenUnits } from "./transactions";
+There is no builder for registering. Entry into the register happens only inside
+`customVerificationHook`, which only Self's Identity Verification Hub can trigger, and only
+after it validates a zero-knowledge proof. No transaction a user builds can register anyone,
+so there is nothing to build. The flow lives at https://subi.space/verify.
 
-// Pledge $10,000 USDC to treasury
-const amount = usdToTokenUnits("10000", 6); // USDC has 6 decimals
-const attribution = "SpaceX - Starlink Q1 2027 Revenue Share";
+## Tests
 
-const txs = buildPledgeTransaction("CELO_MAINNET", amount, attribution);
-// Returns 2 transactions: approve + deposit
-// Sign and broadcast both
-```
+`test/Attribution.test.ts` checks that every builder appends the tag, sets `feeCurrency`, and
+uses selectors that match the deployed signatures. That last check exists because an earlier
+version encoded `claim(uint256)` and `pledge(address,uint256)`, neither of which exists on the
+deployed contracts, and the tests only looked at the tag.
 
-### Build Claim Transaction
+## Network
 
-```typescript
-import { buildClaimTransaction, queryClaimable } from "./transactions";
-
-// Check claimable amount
-const claimable = await queryClaimable("CELO_MAINNET", "0x...");
-console.log(`Claimable: ${tokenUnitsToUsd(claimable, 6)} USD`);
-
-// Build claim transaction
-const tx = buildClaimTransaction("CELO_MAINNET", "0x...");
-// Sign and broadcast
-```
-
-### Build Register Transaction
-
-```typescript
-import { buildRegisterTransaction } from "./transactions";
-
-// IMPORTANT: In production, nullifier comes from Self ZK proof
-// DO NOT fabricate nullifiers - this is a STUB for hackathon demo
-const nullifier = "0x..."; // From Self proof verification
-
-const tx = buildRegisterTransaction("CELO_MAINNET", nullifier);
-// Sign and broadcast
-```
-
-### Build Create Pledge Transaction
-
-```typescript
-import { buildCreatePledgeTransaction } from "./transactions";
-
-const tx = buildCreatePledgeTransaction("CELO_MAINNET", {
-  name: "Blue Origin",
-  revenuePercentBps: 500, // 5%
-  annualFloorUSD: ethers.parseEther("100000").toString(), // $100k/year minimum
-  startDate: Math.floor(Date.now() / 1000),
-  endDate: 0, // Perpetual
-  reportURI: "ipfs://Qm...", // Link to pledge document
-});
-// Sign and broadcast
-```
-
-## Transaction Format
-
-All unsigned transactions follow this format:
-
-```typescript
-{
-  to: string;           // Contract address
-  data: string;         // Encoded function call
-  value: string;        // Always "0" (no ETH/CELO sent)
-  chainId: number;      // 42220 (mainnet) or 44787 (Sepolia)
-  attribution?: string; // Celo attribution tag
-}
-```
-
-## Fee Abstraction (CIP-64)
-
-SUBI uses Celo's fee abstraction - users can pay gas in the same stablecoin they're claiming/depositing (cUSD, USDC, etc). No need to acquire CELO token for gas.
-
-## Self Integration
-
-The `register()` function is designed for [Self protocol](https://self.app/) integration:
-
-1. User scans passport NFC chip
-2. ZK proof generated on device
-3. Proof yields unique `nullifier` (no PII transmitted)
-4. Agent builds transaction with nullifier
-
-**Hackathon Note**: Registry contract has stub registration. For production, integrate Self's `SelfVerificationRoot` contract for real ZK proof verification.
-
-## Network Details
-
-### Celo Mainnet (42220)
-- RPC: `https://forno.celo.org`
-- Explorer: https://celoscan.io
-- cUSD: `0x765DE816845861e75A25fCA122bb6898B8B1282a`
-
-### Celo Sepolia Testnet (44787)
-- RPC: `https://alfajores-forno.celo-testnet.org`
-- Explorer: https://alfajores.celoscan.io
-- Faucet: https://faucet.celo.org
-
-## Anti-Farming Notes
-
-SUBI is designed to resist value farming:
-
-1. **One human, one slot**: Self nullifiers enforce unique identity
-2. **Non-transferable**: Registry slots cannot be sold/traded
-3. **Proof of life**: 12-month expiration requires renewal
-4. **Conservative accounting**: System pays less if activeCount is stale, never more
-
-## Attribution & Compliance
-
-All transactions include `ATTRIBUTION_TAG` for Celo's value moved tracking. This helps measure agent-driven economic activity on-chain.
+Celo mainnet, chain id `42220`, RPC `https://forno.celo.org`. The testnet is Celo Sepolia,
+chain id `11142220`. Alfajores is retired.
 
 ## License
 

@@ -8,7 +8,9 @@ treasury, claim the dividend. All on Celo, paying gas in the same stablecoin bei
 claimed.
 
 - **Live site:** https://subi.space · **Demo walkthrough:** https://subi.space/demo
-- **Full proposal:** https://subi.space/propuesta
+- **Full proposal:** https://subi.space/proposal (English) · https://subi.space/propuesta (Spanish)
+- **Try it:** https://subi.space/verify (Self) · https://subi.space/dashboard (claim, contribute, swap to 13 currencies)
+- **Demo video:** https://x.com/ArtuGrande/status/2098540560306823513
 - **Agent ID (ERC-8004):** 9822 · **Attribution tag:** `celo_ac17e664a585`
 
 > This document describes the **current state** of the project as of 9 September 2026.
@@ -216,10 +218,10 @@ npm run deploy:mainnet        # deploys the four contracts and verifies the wiri
 
 Stated plainly, because a proposal that hides its gaps is not worth evaluating:
 
-- **The register is empty.** `activeCount()` is `0`: no human has completed a Self
-  verification against this registry on mainnet yet. The path is live and provable from
-  the chain, but it has not been walked end to end in production. That is the honest
-  reading of `npm run verify:onchain`, which reports it.
+- **One person in the register.** `activeCount()` is `1`. The first registration, on
+  11 September 2026, is the author's own passport ([tx](https://celoscan.io/tx/0x6e4833ea0c6ff31cc60f9c9d3407db61be8e985c837b68c4c26087ce09e02381)). It proves the Self
+  path works end to end on mainnet. It is not adoption: that is what the pilot of 1,000
+  people is for.
 - **The fund is symbolic.** 0.5 USDT seeded. The mechanism is real; the money is not
   yet. Bringing in contributors is the actual next problem, and it is a political one,
   not a technical one.
