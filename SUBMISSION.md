@@ -60,6 +60,10 @@ every other basic-income-with-identity project.
 | PledgeRegistry | `0x642b4F2737E85f42bae5Fc4830544EBCf48F1F13` |
 | Asset | USDT `0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e` |
 
+Source verified on [Blockscout](https://celo.blockscout.com/address/0x72Aa7f3B4ca2c230cd710Ef847015f0B963F0232#code)
+(full match) and Sourcify (exact match) for all four, so the explorer shows the exact code
+behind each address.
+
 Canonical source: [`deployment-mainnet.json`](deployment-mainnet.json), which also
 records the verified cross-wiring and the superseded deployment.
 
