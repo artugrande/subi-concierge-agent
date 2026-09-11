@@ -51,5 +51,25 @@
     "registryScope": "1791990282645894430767631087883723948916118618645082015976770485675938863393",
     "verificationConfigId": "0xc52f992ebee4435b00b65d2c74b12435e96359d1ccf408041528414e6ea687bc",
     "note": "scope y configId leidos on-chain: el constructor registro la config contra el hub real. register(bytes32) no existe en el bytecode desplegado."
+  },
+  "ownership": {
+    "renouncedAt": "2026-09-11T23:11:25Z",
+    "treasury": {
+      "owner": "0x0000000000000000000000000000000000000000",
+      "tx": "0x8ecd49fa96faf699fbe48c770d9828808b0db8444ef062685bdc4298f38e212a"
+    },
+    "distributor": {
+      "owner": "0x000000000000000000000000000000000000dEaD",
+      "tx": "0x42fbbf79d470b9c2415beb5de3d977e70aa8aa6f12c577e3743484abd21280f9",
+      "note": "transferOwnership rejects the zero address, so the burn address is used"
+    },
+    "registry": {
+      "owner": "0x35422f585e1f570515147E557aEF8fD6a6e1b3b3",
+      "note": "its only owner function, setDistributor, is one-time and already used: no power left"
+    },
+    "pledgeRegistry": {
+      "owner": null,
+      "note": "has no owner"
+    }
   }
 }

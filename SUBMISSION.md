@@ -29,8 +29,8 @@ npm test                 # 58 contract tests
 `verify:onchain` does not trust this repository: it takes the addresses from
 `deployment-mainnet.json` and confirms against the chain that the contracts exist, that
 the cross-wiring resolves in all three directions, that the treasury balance counts as
-distributable, and that Self's config and scope are registered against the real hub. It
-exits non-zero if anything fails.
+distributable, that Self's config and scope are registered against the real hub, and that nobody owns the
+treasury or the distributor. It exits non-zero if anything fails.
 
 ---
 
@@ -62,6 +62,16 @@ every other basic-income-with-identity project.
 
 Canonical source: [`deployment-mainnet.json`](deployment-mainnet.json), which also
 records the verified cross-wiring and the superseded deployment.
+
+### Nobody can touch the fund
+
+Ownership of the treasury and the distributor was renounced on-chain on 11 September 2026
+(treasury to `0x0` in [`0x8ecd49fa…212a`](https://celoscan.io/tx/0x8ecd49fa96faf699fbe48c770d9828808b0db8444ef062685bdc4298f38e212a), distributor to `0x…dEaD` in
+[`0x42fbbf79…80f9`](https://celoscan.io/tx/0x42fbbf79d470b9c2415beb5de3d977e70aa8aa6f12c577e3743484abd21280f9)). Before that, one key could redirect the whole treasury, and that
+path had been used twice to rescue earlier deployments. Now nobody can, the author included: the
+draw rate is fixed at 4% a year and money only leaves the treasury when someone in the register
+claims. The registry's owner field still holds the deployer, but its only owner function was
+one-time and is spent.
 
 ---
 
@@ -123,7 +133,8 @@ Three properties fall out of that, and they are the whole argument:
 
 - **Insolvency is structurally impossible.** It distributes a fraction of what
   exists, never a promised amount. If the treasury shrinks, the dividend shrinks.
-- **Zero discretion.** The individual amount is the result of a division, not a vote.
+- **Zero discretion.** The individual amount is the result of a division, not a vote, and nobody
+  can change the draw rate: the treasury and the distributor have no owner.
 - **O(1) cost per user.** Accumulated-index accounting: someone can disappear for a
   year and their claim costs the same gas as someone claiming daily.
 
@@ -166,7 +177,8 @@ every transaction the agent and the MCP build, and is covered by tests.
 It landed **after** the current contracts were deployed. Verified against the chain, the
 four deployment transactions and the three wiring calls **do not carry the suffix**, and
 ERC-8021 has no backfill: a tag cannot be added to a transaction once it is sent.
-Transactions sent from here on carry it. Stated because it is checkable, and a reader
+Transactions sent from here on carry it: the first two that do are the ownership
+renunciations, and `fromDataSuffix` decodes both to `codes: ["celo_ac17e664a585"]`. Stated because it is checkable, and a reader
 would find it.
 
 `utils/attribution.ts` loads `@celo/attribution-tags` through a dynamic import wrapped
