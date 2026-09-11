@@ -45,8 +45,8 @@ npm test                 # 58 contract tests
 `deployment-mainnet.json` and checks everything against the chain: that the four contracts
 have bytecode, that the cross-wiring resolves in all three directions, that the treasury
 balance counts as distributable, that Self's config and scope registered against the real
-hub, and that the unverified registration path is absent from the deployed bytecode. It
-exits non-zero if any check fails.
+hub, that the unverified registration path is absent from the deployed bytecode, and that nobody
+owns the treasury or the distributor. It exits non-zero if any check fails.
 
 Expected output ends with `Todo verificado contra la cadena.`
 
@@ -76,7 +76,8 @@ perCapita = budget / activeHumans
 
 - **Insolvency is structurally impossible.** It distributes a fraction of what exists, never
   a promised amount. If the treasury shrinks, the dividend shrinks.
-- **Zero discretion.** The individual amount is the result of a division, not a vote.
+- **Zero discretion.** The individual amount is the result of a division, not a vote, and nobody
+  can change the draw rate: the treasury and the distributor have no owner.
 - **O(1) cost per user.** Accumulated-index accounting: someone can disappear for a year and
   their claim costs the same gas as someone claiming daily.
 
@@ -149,7 +150,8 @@ every transaction the agent and the MCP build, and is covered by tests.
 It landed **after** the contracts above were deployed. Verified against the chain, the four
 deployment transactions and the three wiring calls **do not carry the suffix**, and ERC-8021
 has no backfill: a tag cannot be added to a transaction once it is sent. Transactions sent
-from here on carry it.
+from here on carry it. The first two that do are the ownership renunciations below:
+`fromDataSuffix` decodes both to `codes: ["celo_ac17e664a585"]`.
 
 Check any transaction yourself:
 
@@ -220,11 +222,36 @@ cp .env.example .env    # then set DEPLOYER_PRIVATE_KEY
 - `config.ts` — agent configuration (tag, ID, wallet)
 - `docs/MCP.md` — MCP tool reference
 
+## Nobody can touch the fund
+
+Ownership of the treasury and the distributor was renounced on-chain on 11 September 2026:
+
+| Contract | Owner now | Renounced in |
+|---|---|---|
+| SubiTreasury | `0x0000000000000000000000000000000000000000` | [`0x8ecd49fa…212a`](https://celoscan.io/tx/0x8ecd49fa96faf699fbe48c770d9828808b0db8444ef062685bdc4298f38e212a) |
+| SubiDistributor | `0x000000000000000000000000000000000000dEaD` | [`0x42fbbf79…80f9`](https://celoscan.io/tx/0x42fbbf79d470b9c2415beb5de3d977e70aa8aa6f12c577e3743484abd21280f9) |
+
+Before that, one key could redirect the whole treasury (`setDistributor` to itself, then
+`withdraw`), and that path had been used twice to rescue earlier treasuries. Now nobody can, the
+author included. `setDistributor` and `setDrawRate` are unreachable, the draw rate is fixed at 4%
+a year, and the only way money leaves the treasury is a claim by someone in the register.
+
+The distributor's `transferOwnership` rejects the zero address, which is why its owner is the
+burn address. The registry's `owner()` still returns the deployer, but its only owner function,
+`setDistributor`, could be called once and already was: it has no power left.
+
+The renunciation was done with [`scripts/renounce-ownership.ts`](scripts/renounce-ownership.ts),
+tested first against a local copy of mainnet, including a claim made afterwards, so the fund is
+not locked: it can only move through the claim path. `npm run verify:onchain` checks the owners.
+
+---
+
 ## Security
 
 - Private keys are never committed; `.env` is gitignored.
 - The MCP server's write tools return unsigned transactions only. It holds no keys.
 - There is no unverified path into the register, and no admin function that can add one.
+- The treasury and the distributor have no owner. See [Nobody can touch the fund](#nobody-can-touch-the-fund).
 
 ## License
 

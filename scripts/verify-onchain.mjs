@@ -68,6 +68,19 @@ const codigoRegistry = await provider.getCode(registry);
 const selector = ethers.id("register(bytes32)").slice(2, 10);
 fila(`selector register(bytes32)`, `0x${selector} ausente del bytecode`, !codigoRegistry.includes(selector));
 
+console.log("\nNadie puede tocar el fondo");
+const oT = await leer(treasury, "function owner() view returns (address)").owner();
+const oD = await leer(distributor, "function owner() view returns (address)").owner();
+fila("treasury.owner()", oT, oT === ethers.ZeroAddress);
+fila("distributor.owner()", oD, oD.toLowerCase() === "0x000000000000000000000000000000000000dead");
+// El ex owner ya no puede redirigir el fondo: se simula, no se manda nada.
+let redirige = true;
+try {
+  await provider.call({ from: dep.deployer, to: treasury,
+    data: new ethers.Interface(["function setDistributor(address)"]).encodeFunctionData("setDistributor", [dep.deployer]) });
+} catch { redirige = false; }
+fila("setDistributor del ex owner", redirige ? "pasa" : "revierte", !redirige);
+
 console.log("\nPadrón");
 const activos = await leer(registry, "function activeCount() view returns (uint256)").activeCount();
 console.log(`  ${"activeCount()".padEnd(30)} ${activos.toString()}`);
