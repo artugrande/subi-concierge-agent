@@ -31,6 +31,12 @@ const config: HardhatUserConfig = {
         ? [AGENT_CONFIG.DEPLOYER_PRIVATE_KEY]
         : [],
     },
+    // Copia local de mainnet con anvil, para simular sin tocar nada real.
+    // El nodo de Hardhat no puede copiar Celo: no trae su historial de hardforks.
+    "celo-fork": {
+      url: process.env.FORK_RPC_URL || "http://127.0.0.1:8547",
+      chainId: 42220,
+    },
   },
   paths: {
     sources: "./contracts",

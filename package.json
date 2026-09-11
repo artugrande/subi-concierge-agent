@@ -11,7 +11,8 @@
     "compile": "hardhat compile",
     "deploy:mainnet": "hardhat run scripts/deploy-core.ts --network celo",
     "deploy:sepolia": "hardhat run scripts/deploy-core.ts --network celo-sepolia",
-    "verify:onchain": "node scripts/verify-onchain.mjs"
+    "verify:onchain": "node scripts/verify-onchain.mjs",
+    "renounce:mainnet": "hardhat run scripts/renounce-ownership.ts --network celo"
   },
   "dependencies": {
     "@celo/attribution-tags": "^0.3.0",
